@@ -2,19 +2,26 @@ import React from "react";
 import { Link, useLocation } from "wouter";
 import {
   LayoutDashboard, Activity, Settings, Download, ArrowLeft,
-  Shield, ChevronRight
+  Shield, ChevronRight, LogOut, BookOpen
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { logoutAdmin } from "./login";
 
 const navItems = [
   { href: "/admin", label: "Overview", icon: LayoutDashboard, exact: true },
   { href: "/admin/activity", label: "Audit Log", icon: Activity },
   { href: "/admin/settings", label: "Settings", icon: Settings },
   { href: "/admin/export", label: "Data Export", icon: Download },
+  { href: "/admin/manual", label: "Admin Manual", icon: BookOpen },
 ];
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
-  const [location] = useLocation();
+  const [location, navigate] = useLocation();
+
+  const handleLogout = () => {
+    logoutAdmin();
+    navigate("/admin/login");
+  };
 
   return (
     <div className="flex h-screen bg-background overflow-hidden dark text-foreground">
@@ -48,13 +55,17 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           })}
         </nav>
 
-        <div className="p-3 border-t border-zinc-800">
+        <div className="p-3 border-t border-zinc-800 space-y-1">
           <Link href="/">
             <Button variant="ghost" size="sm" className="w-full justify-start text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800">
               <ArrowLeft className="w-4 h-4 mr-2" />
               Back to App
             </Button>
           </Link>
+          <Button variant="ghost" size="sm" className="w-full justify-start text-zinc-500 hover:text-red-400 hover:bg-red-900/20" onClick={handleLogout}>
+            <LogOut className="w-4 h-4 mr-2" />
+            Sign Out
+          </Button>
         </div>
       </aside>
 
@@ -64,14 +75,14 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           <div className="flex items-center gap-2 text-sm text-zinc-400">
             <Shield className="w-4 h-4 text-red-500" />
             <span className="text-zinc-200 font-medium">Admin</span>
-            {location !== "/admin" && (
+            {location !== "/admin" && location !== "/admin/login" && (
               <>
                 <ChevronRight className="w-3 h-3" />
-                <span className="text-zinc-200 capitalize">{location.split("/admin/")[1]}</span>
+                <span className="text-zinc-200 capitalize">{location.split("/admin/")[1]?.replace(/-/g, ' ')}</span>
               </>
             )}
           </div>
-          <div className="ml-auto">
+          <div className="ml-auto flex items-center gap-3">
             <span className="text-xs bg-red-600/20 text-red-400 border border-red-600/30 rounded px-2 py-0.5">
               Administrator Access
             </span>

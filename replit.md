@@ -44,7 +44,7 @@ pnpm workspace monorepo using TypeScript. A premium eBay VA Client Manager dashb
 - `artifacts/api-server/src/lib/serialize.ts` — `serializeDates()` for Date→ISO string
 - `artifacts/va-dashboard/src/App.tsx` — Routes, admin guard
 - `artifacts/va-dashboard/src/components/layout.tsx` — Main layout with live badges
-- `artifacts/va-dashboard/src/pages/admin/` — Admin panel UI (5 pages)
+- `artifacts/va-dashboard/src/pages/admin/` — Admin panel UI (6 pages + manual)
 - `artifacts/va-dashboard/src/lib/admin-api.ts` — Admin fetch helpers
 
 ### DB Tables

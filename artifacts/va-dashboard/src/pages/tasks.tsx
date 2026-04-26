@@ -6,7 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Plus, Search, Trash2, CheckCircle2, Circle, AlertCircle } from 'lucide-react';
+import { Plus, Search, Trash2, CheckCircle2, Circle, AlertCircle, Edit2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
@@ -50,6 +50,8 @@ export default function Tasks() {
   const [search, setSearch] = useState('');
   const [isAddOpen, setIsAddOpen] = useState(false);
 
+  const [editingTask, setEditingTask] = useState<{ id: number; task: string } & z.infer<typeof schema> | null>(null);
+
   const { data: tasks, isLoading } = useGetTasks({ query: { queryKey: getGetTasksQueryKey() } });
   const { data: clients } = useGetClients({ query: { queryKey: getGetClientsQueryKey() } });
   const createTask = useCreateTask();
@@ -57,6 +59,24 @@ export default function Tasks() {
   const deleteTask = useDeleteTask();
 
   const form = useForm<z.infer<typeof schema>>({ resolver: zodResolver(schema), defaultValues: { priority: 'Medium', status: 'Not Started' } });
+  const editForm = useForm<z.infer<typeof schema>>({ resolver: zodResolver(schema) });
+
+  const openEditTask = (t: { id: number; task: string; clientId?: number | null; priority?: string | null; dueDate?: string | null; status?: string | null; notes?: string | null }) => {
+    setEditingTask({ id: t.id, task: t.task, clientId: t.clientId ?? undefined, priority: t.priority ?? 'Medium', dueDate: t.dueDate ?? '', status: t.status ?? 'Not Started', notes: t.notes ?? '' });
+    editForm.reset({ task: t.task, clientId: t.clientId ?? undefined, priority: t.priority ?? 'Medium', dueDate: t.dueDate ?? '', status: t.status ?? 'Not Started', notes: t.notes ?? '' });
+  };
+
+  const onEditSubmit = (data: z.infer<typeof schema>) => {
+    if (!editingTask) return;
+    updateTask.mutate({ id: editingTask.id, data }, {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: getGetTasksQueryKey() });
+        setEditingTask(null);
+        toast({ title: 'Task updated', description: `"${data.task}" has been updated.` });
+      },
+      onError: () => toast({ title: 'Error', description: 'Failed to update task.', variant: 'destructive' }),
+    });
+  };
 
   const onSubmit = (data: z.infer<typeof schema>) => {
     createTask.mutate({ data }, {
@@ -183,9 +203,14 @@ export default function Tasks() {
                   </TableCell>
                   <TableCell><StatusBadge status={t.status} /></TableCell>
                   <TableCell className="text-right">
-                    <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/10" onClick={() => handleDelete(t.id, t.task)}>
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
+                    <div className="flex justify-end gap-1">
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground" onClick={() => openEditTask(t)}>
+                        <Edit2 className="h-4 w-4" />
+                      </Button>
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/10" onClick={() => handleDelete(t.id, t.task)}>
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </TableCell>
                 </TableRow>
               );
@@ -193,6 +218,53 @@ export default function Tasks() {
           </TableBody>
         </Table>
       </div>
+
+      {/* Edit Task Dialog */}
+      <Dialog open={!!editingTask} onOpenChange={(open) => { if (!open) setEditingTask(null); }}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Edit Task</DialogTitle></DialogHeader>
+          <Form {...editForm}>
+            <form onSubmit={editForm.handleSubmit(onEditSubmit)} className="space-y-4">
+              <FormField control={editForm.control} name="task" render={({ field }) => (
+                <FormItem><FormLabel>Task *</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+              )} />
+              <div className="grid grid-cols-2 gap-4">
+                <FormField control={editForm.control} name="clientId" render={({ field }) => (
+                  <FormItem><FormLabel>Client</FormLabel>
+                    <Select onValueChange={(v) => field.onChange(v ? Number(v) : undefined)} value={field.value ? String(field.value) : ''}>
+                      <FormControl><SelectTrigger><SelectValue placeholder="General" /></SelectTrigger></FormControl>
+                      <SelectContent><SelectItem value="">General</SelectItem>{clients?.map(c => <SelectItem key={c.id} value={String(c.id)}>{c.clientName}</SelectItem>)}</SelectContent>
+                    </Select><FormMessage /></FormItem>
+                )} />
+                <FormField control={editForm.control} name="priority" render={({ field }) => (
+                  <FormItem><FormLabel>Priority</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
+                      <SelectContent><SelectItem value="High">High</SelectItem><SelectItem value="Medium">Medium</SelectItem><SelectItem value="Low">Low</SelectItem></SelectContent>
+                    </Select><FormMessage /></FormItem>
+                )} />
+                <FormField control={editForm.control} name="dueDate" render={({ field }) => (
+                  <FormItem><FormLabel>Due Date</FormLabel><FormControl><Input type="date" {...field} /></FormControl><FormMessage /></FormItem>
+                )} />
+                <FormField control={editForm.control} name="status" render={({ field }) => (
+                  <FormItem><FormLabel>Status</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
+                      <SelectContent><SelectItem value="Not Started">Not Started</SelectItem><SelectItem value="In Progress">In Progress</SelectItem><SelectItem value="Blocked">Blocked</SelectItem><SelectItem value="Done">Done</SelectItem></SelectContent>
+                    </Select><FormMessage /></FormItem>
+                )} />
+              </div>
+              <FormField control={editForm.control} name="notes" render={({ field }) => (
+                <FormItem><FormLabel>Notes</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+              )} />
+              <DialogFooter>
+                <Button variant="outline" type="button" onClick={() => setEditingTask(null)}>Cancel</Button>
+                <Button type="submit" disabled={updateTask.isPending}>Save Changes</Button>
+              </DialogFooter>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

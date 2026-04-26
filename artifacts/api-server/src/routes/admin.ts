@@ -167,7 +167,52 @@ router.delete("/admin/bulk", async (req, res): Promise<void> => {
 });
 
 // ─── Settings ──────────────────────────────────────────────────────────────
+// ─── Auth ───────────────────────────────────────────────────────────────────
+router.post("/admin/auth", async (req, res): Promise<void> => {
+  const { password } = req.body as { password?: string };
+  if (!password) { res.status(400).json({ error: "Password required" }); return; }
+
+  // Get admin password from settings (auto-seed if not exists)
+  await db.insert(settingsTable).values({ key: "admin_password", value: "admin123", label: "Admin Password", group: "security" }).onConflictDoNothing();
+  const [setting] = await db.select().from(settingsTable).where(eq(settingsTable.key, "admin_password"));
+  const storedPassword = setting?.value ?? "admin123";
+
+  if (password === storedPassword) {
+    res.json({ success: true, message: "Authenticated" });
+  } else {
+    res.status(401).json({ error: "Invalid admin password. Check Settings if you changed it." });
+  }
+});
+
+// ─── Full Backup ─────────────────────────────────────────────────────────────
+router.get("/admin/backup", async (_req, res): Promise<void> => {
+  const [clients, ebay, wiseCards, bankAccounts, invoices, violations, tasks, earnings, expenses, recovery, dailyLogins] = await Promise.all([
+    db.select().from(clientsTable),
+    db.select().from(ebayAccountsTable),
+    db.select().from(wiseCardsTable),
+    db.select().from(bankAccountsTable),
+    db.select().from(invoicesTable),
+    db.select().from(violationsTable),
+    db.select().from(tasksTable),
+    db.select().from(earningsTable),
+    db.select().from(expensesTable),
+    db.select().from(recoveryEntriesTable),
+    db.select().from(dailyLoginsTable),
+  ]);
+
+  const backup = {
+    version: "1.0",
+    exportedAt: new Date().toISOString(),
+    data: { clients, ebayAccounts: ebay, wiseCards, bankAccounts, invoices, violations, tasks, earnings, expenses, recoveryEntries: recovery, dailyLogins },
+  };
+
+  res.setHeader("Content-Type", "application/json");
+  res.setHeader("Content-Disposition", `attachment; filename="va-backup-${new Date().toISOString().slice(0, 10)}.json"`);
+  res.send(JSON.stringify(backup, null, 2));
+});
+
 const DEFAULT_SETTINGS = [
+  { key: "admin_password", value: "admin123", label: "Admin Password", group: "security" },
   { key: "company_name", value: "VA eBay Client Manager", label: "Company Name", group: "general" },
   { key: "admin_email", value: "admin@va.com", label: "Admin Email", group: "general" },
   { key: "default_currency", value: "USD", label: "Default Currency", group: "general" },
@@ -212,6 +257,53 @@ router.put("/admin/settings", async (req, res): Promise<void> => {
     }
   }
   res.json({ success: true, updated: results });
+});
+
+// ─── Restore Backup ──────────────────────────────────────────────────────────
+router.post("/admin/restore", async (req, res): Promise<void> => {
+  const body = req.body as { version?: string; data?: Record<string, unknown[]> };
+  if (!body?.data) { res.status(400).json({ error: "Invalid backup file — missing data key" }); return; }
+
+  const { data } = body;
+  let restored = 0;
+  const errors: string[] = [];
+
+  const restoreTable = async (table: typeof clientsTable, rows: unknown[], name: string) => {
+    if (!Array.isArray(rows) || rows.length === 0) return;
+    for (const row of rows) {
+      const r = row as Record<string, unknown>;
+      const cleanRow = { ...r };
+      delete cleanRow["id"];
+      delete cleanRow["createdAt"];
+      delete cleanRow["updatedAt"];
+      try {
+        await (db.insert(table) as ReturnType<typeof db.insert>).values(cleanRow as never).onConflictDoNothing();
+        restored++;
+      } catch {
+        errors.push(`${name}: failed to insert row`);
+      }
+    }
+  };
+
+  if (data["clients"]) await restoreTable(clientsTable, data["clients"], "clients");
+  if (data["ebayAccounts"]) await restoreTable(ebayAccountsTable as unknown as typeof clientsTable, data["ebayAccounts"], "ebayAccounts");
+  if (data["wiseCards"]) await restoreTable(wiseCardsTable as unknown as typeof clientsTable, data["wiseCards"], "wiseCards");
+  if (data["bankAccounts"]) await restoreTable(bankAccountsTable as unknown as typeof clientsTable, data["bankAccounts"], "bankAccounts");
+  if (data["invoices"]) await restoreTable(invoicesTable as unknown as typeof clientsTable, data["invoices"], "invoices");
+  if (data["violations"]) await restoreTable(violationsTable as unknown as typeof clientsTable, data["violations"], "violations");
+  if (data["tasks"]) await restoreTable(tasksTable as unknown as typeof clientsTable, data["tasks"], "tasks");
+  if (data["earnings"]) await restoreTable(earningsTable as unknown as typeof clientsTable, data["earnings"], "earnings");
+  if (data["expenses"]) await restoreTable(expensesTable as unknown as typeof clientsTable, data["expenses"], "expenses");
+  if (data["recoveryEntries"]) await restoreTable(recoveryEntriesTable as unknown as typeof clientsTable, data["recoveryEntries"], "recoveryEntries");
+  if (data["dailyLogins"]) await restoreTable(dailyLoginsTable as unknown as typeof clientsTable, data["dailyLogins"], "dailyLogins");
+
+  await db.insert(activityTable).values({
+    type: "restore",
+    description: `Restored ${restored} records from backup (${errors.length} errors)`,
+    clientName: null,
+  });
+
+  res.json({ success: true, restored, errors });
 });
 
 // ─── Activity Feed ──────────────────────────────────────────────────────────

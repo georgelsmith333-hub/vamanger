@@ -6,7 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Plus, Search, Trash2, CheckCircle2, Clock, AlertCircle } from 'lucide-react';
+import { Plus, Search, Trash2, CheckCircle2, Clock, AlertCircle, Edit2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
@@ -43,6 +43,8 @@ export default function Invoices() {
   const [search, setSearch] = useState('');
   const [isAddOpen, setIsAddOpen] = useState(false);
 
+  const [editingInvoice, setEditingInvoice] = useState<(z.infer<typeof schema> & { id: number; invoiceNumber: string }) | null>(null);
+
   const { data: invoices, isLoading } = useGetInvoices({ query: { queryKey: getGetInvoicesQueryKey() } });
   const { data: clients } = useGetClients({ query: { queryKey: getGetClientsQueryKey() } });
   const createInvoice = useCreateInvoice();
@@ -50,6 +52,25 @@ export default function Invoices() {
   const deleteInvoice = useDeleteInvoice();
 
   const form = useForm<z.infer<typeof schema>>({ resolver: zodResolver(schema), defaultValues: { status: 'Draft', amount: 0 } });
+  const editForm = useForm<z.infer<typeof schema>>({ resolver: zodResolver(schema) });
+
+  const openEdit = (inv: { id: number; invoiceNumber: string; clientId?: number | null; issueDate?: string | null; dueDate?: string | null; hours?: number | null; rate?: number | null; amount: number; status: string; notes?: string | null }) => {
+    const reset = { clientId: inv.clientId ?? 0, invoiceNumber: inv.invoiceNumber, issueDate: inv.issueDate ?? '', dueDate: inv.dueDate ?? '', hours: inv.hours ?? undefined, rate: inv.rate ?? undefined, amount: inv.amount, status: inv.status, notes: inv.notes ?? '' };
+    setEditingInvoice({ id: inv.id, ...reset });
+    editForm.reset(reset);
+  };
+
+  const onEditSubmit = (data: z.infer<typeof schema>) => {
+    if (!editingInvoice) return;
+    updateInvoice.mutate({ id: editingInvoice.id, data }, {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: getGetInvoicesQueryKey() });
+        setEditingInvoice(null);
+        toast({ title: 'Invoice updated', description: `${editingInvoice.invoiceNumber} has been updated.` });
+      },
+      onError: () => toast({ title: 'Error', description: 'Failed to update invoice.', variant: 'destructive' }),
+    });
+  };
 
   const onSubmit = (data: z.infer<typeof schema>) => {
     createInvoice.mutate({ data }, {
@@ -182,12 +203,15 @@ export default function Invoices() {
                 <TableCell className="font-medium">${Number(inv.amount).toFixed(2)}</TableCell>
                 <TableCell><StatusBadge status={inv.status} /></TableCell>
                 <TableCell className="text-right">
-                  <div className="flex justify-end gap-2">
+                  <div className="flex justify-end gap-1">
                     {inv.status !== 'Paid' && (
                       <Button variant="ghost" size="sm" className="text-emerald-500 h-8 px-2 text-xs" onClick={() => handleMarkPaid(inv.id, inv.invoiceNumber)}>
                         <CheckCircle2 className="w-3 h-3 mr-1" />Mark Paid
                       </Button>
                     )}
+                    <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground" onClick={() => openEdit(inv)}>
+                      <Edit2 className="h-4 w-4" />
+                    </Button>
                     <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/10" onClick={() => handleDelete(inv.id, inv.invoiceNumber)}>
                       <Trash2 className="h-4 w-4" />
                     </Button>
@@ -198,6 +222,58 @@ export default function Invoices() {
           </TableBody>
         </Table>
       </div>
+
+      {/* Edit Invoice Dialog */}
+      <Dialog open={!!editingInvoice} onOpenChange={(open) => { if (!open) setEditingInvoice(null); }}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader><DialogTitle>Edit Invoice — {editingInvoice?.invoiceNumber}</DialogTitle></DialogHeader>
+          <Form {...editForm}>
+            <form onSubmit={editForm.handleSubmit(onEditSubmit)} className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <FormField control={editForm.control} name="clientId" render={({ field }) => (
+                  <FormItem><FormLabel>Client</FormLabel>
+                    <Select onValueChange={(v) => field.onChange(Number(v))} value={String(field.value || '')}>
+                      <FormControl><SelectTrigger><SelectValue placeholder="Select client" /></SelectTrigger></FormControl>
+                      <SelectContent>{clients?.map(c => <SelectItem key={c.id} value={String(c.id)}>{c.clientName}</SelectItem>)}</SelectContent>
+                    </Select><FormMessage /></FormItem>
+                )} />
+                <FormField control={editForm.control} name="invoiceNumber" render={({ field }) => (
+                  <FormItem><FormLabel>Invoice #</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                )} />
+                <FormField control={editForm.control} name="issueDate" render={({ field }) => (
+                  <FormItem><FormLabel>Issue Date</FormLabel><FormControl><Input type="date" {...field} /></FormControl><FormMessage /></FormItem>
+                )} />
+                <FormField control={editForm.control} name="dueDate" render={({ field }) => (
+                  <FormItem><FormLabel>Due Date</FormLabel><FormControl><Input type="date" {...field} /></FormControl><FormMessage /></FormItem>
+                )} />
+                <FormField control={editForm.control} name="hours" render={({ field }) => (
+                  <FormItem><FormLabel>Hours</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
+                )} />
+                <FormField control={editForm.control} name="rate" render={({ field }) => (
+                  <FormItem><FormLabel>Rate ($/hr)</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
+                )} />
+                <FormField control={editForm.control} name="amount" render={({ field }) => (
+                  <FormItem><FormLabel>Amount</FormLabel><FormControl><Input type="number" step="0.01" {...field} /></FormControl><FormMessage /></FormItem>
+                )} />
+                <FormField control={editForm.control} name="status" render={({ field }) => (
+                  <FormItem><FormLabel>Status</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
+                      <SelectContent><SelectItem value="Draft">Draft</SelectItem><SelectItem value="Sent">Sent</SelectItem><SelectItem value="Paid">Paid</SelectItem><SelectItem value="Overdue">Overdue</SelectItem></SelectContent>
+                    </Select><FormMessage /></FormItem>
+                )} />
+              </div>
+              <FormField control={editForm.control} name="notes" render={({ field }) => (
+                <FormItem><FormLabel>Notes</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+              )} />
+              <DialogFooter>
+                <Button variant="outline" type="button" onClick={() => setEditingInvoice(null)}>Cancel</Button>
+                <Button type="submit" disabled={updateInvoice.isPending}>Save Changes</Button>
+              </DialogFooter>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

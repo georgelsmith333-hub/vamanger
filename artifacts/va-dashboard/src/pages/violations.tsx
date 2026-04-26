@@ -6,7 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Plus, Search, Trash2, ShieldCheck, ShieldAlert } from 'lucide-react';
+import { Plus, Search, Trash2, ShieldCheck, ShieldAlert, Edit2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
@@ -48,7 +48,28 @@ export default function Violations() {
   const updateViolation = useUpdateViolation();
   const deleteViolation = useDeleteViolation();
 
+  const [editingViolation, setEditingViolation] = useState<{ id: number } & z.infer<typeof schema> | null>(null);
+
   const form = useForm<z.infer<typeof schema>>({ resolver: zodResolver(schema), defaultValues: { severity: 'Warning' } });
+  const editForm = useForm<z.infer<typeof schema>>({ resolver: zodResolver(schema) });
+
+  const openEditViolation = (v: { id: number; clientId?: number | null; ebayUsername?: string | null; date?: string | null; policyCode?: string | null; severity?: string | null; description: string; actionTaken?: string | null; notes?: string | null }) => {
+    const reset = { clientId: v.clientId ?? 0, ebayUsername: v.ebayUsername ?? '', date: v.date ?? '', policyCode: v.policyCode ?? '', severity: v.severity ?? 'Warning', description: v.description, actionTaken: v.actionTaken ?? '', notes: v.notes ?? '' };
+    setEditingViolation({ id: v.id, ...reset });
+    editForm.reset(reset);
+  };
+
+  const onEditSubmit = (data: z.infer<typeof schema>) => {
+    if (!editingViolation) return;
+    updateViolation.mutate({ id: editingViolation.id, data }, {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: getGetViolationsQueryKey() });
+        setEditingViolation(null);
+        toast({ title: 'Violation updated', description: 'The violation record has been updated.' });
+      },
+      onError: () => toast({ title: 'Error', description: 'Failed to update violation.', variant: 'destructive' }),
+    });
+  };
 
   const onSubmit = (data: z.infer<typeof schema>) => {
     createViolation.mutate({ data }, {
@@ -169,12 +190,15 @@ export default function Violations() {
                     : <span className="flex items-center gap-1 text-destructive text-sm"><ShieldAlert className="w-4 h-4" />Open</span>}
                 </TableCell>
                 <TableCell className="text-right">
-                  <div className="flex justify-end gap-2">
+                  <div className="flex justify-end gap-1">
                     {!v.resolved && (
                       <Button variant="ghost" size="sm" className="text-emerald-500 h-8 px-2 text-xs" onClick={() => handleResolve(v.id, v.clientName || 'Client')}>
                         <ShieldCheck className="w-3 h-3 mr-1" />Resolve
                       </Button>
                     )}
+                    <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground" onClick={() => openEditViolation(v)}>
+                      <Edit2 className="h-4 w-4" />
+                    </Button>
                     <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/10" onClick={() => handleDelete(v.id)}>
                       <Trash2 className="h-4 w-4" />
                     </Button>
@@ -185,6 +209,52 @@ export default function Violations() {
           </TableBody>
         </Table>
       </div>
+
+      {/* Edit Violation Dialog */}
+      <Dialog open={!!editingViolation} onOpenChange={(open) => { if (!open) setEditingViolation(null); }}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader><DialogTitle>Edit Violation</DialogTitle></DialogHeader>
+          <Form {...editForm}>
+            <form onSubmit={editForm.handleSubmit(onEditSubmit)} className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <FormField control={editForm.control} name="clientId" render={({ field }) => (
+                  <FormItem><FormLabel>Client</FormLabel>
+                    <Select onValueChange={(v) => field.onChange(Number(v))} value={String(field.value || '')}>
+                      <FormControl><SelectTrigger><SelectValue placeholder="Select client" /></SelectTrigger></FormControl>
+                      <SelectContent>{clients?.map(c => <SelectItem key={c.id} value={String(c.id)}>{c.clientName}</SelectItem>)}</SelectContent>
+                    </Select><FormMessage /></FormItem>
+                )} />
+                <FormField control={editForm.control} name="ebayUsername" render={({ field }) => (
+                  <FormItem><FormLabel>eBay Username</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                )} />
+                <FormField control={editForm.control} name="date" render={({ field }) => (
+                  <FormItem><FormLabel>Date</FormLabel><FormControl><Input type="date" {...field} /></FormControl><FormMessage /></FormItem>
+                )} />
+                <FormField control={editForm.control} name="policyCode" render={({ field }) => (
+                  <FormItem><FormLabel>Policy Code</FormLabel><FormControl><Input {...field} placeholder="MC011" /></FormControl><FormMessage /></FormItem>
+                )} />
+                <FormField control={editForm.control} name="severity" render={({ field }) => (
+                  <FormItem><FormLabel>Severity</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
+                      <SelectContent><SelectItem value="Warning">Warning</SelectItem><SelectItem value="Restricted">Restricted</SelectItem><SelectItem value="Suspended">Suspended</SelectItem></SelectContent>
+                    </Select><FormMessage /></FormItem>
+                )} />
+              </div>
+              <FormField control={editForm.control} name="description" render={({ field }) => (
+                <FormItem><FormLabel>Description *</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+              )} />
+              <FormField control={editForm.control} name="actionTaken" render={({ field }) => (
+                <FormItem><FormLabel>Action Taken</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+              )} />
+              <DialogFooter>
+                <Button variant="outline" type="button" onClick={() => setEditingViolation(null)}>Cancel</Button>
+                <Button type="submit" disabled={updateViolation.isPending}>Save Changes</Button>
+              </DialogFooter>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -17,13 +17,16 @@ import Earnings from "@/pages/earnings";
 import Expenses from "@/pages/expenses";
 import Recovery from "@/pages/recovery";
 import DailyLogin from "@/pages/daily-login";
+import UserManual from "@/pages/user-manual";
 import Admin from "@/pages/admin/index";
+import AdminLogin from "@/pages/admin/login";
 
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      retry: false,
+      retry: 1,
       refetchOnWindowFocus: false,
+      staleTime: 30000,
     },
   },
 });
@@ -35,6 +38,7 @@ function Router() {
   if (isAdmin) {
     return (
       <Switch>
+        <Route path="/admin/login" component={AdminLogin} />
         <Route path="/admin" component={Admin} />
         <Route path="/admin/:rest*" component={Admin} />
       </Switch>
@@ -56,6 +60,7 @@ function Router() {
         <Route path="/expenses" component={Expenses} />
         <Route path="/recovery" component={Recovery} />
         <Route path="/daily-login" component={DailyLogin} />
+        <Route path="/manual" component={UserManual} />
         <Route component={NotFound} />
       </Switch>
     </Layout>

@@ -1,10 +1,105 @@
-import React, { useState } from "react";
-import { Download, CheckCircle2, AlertCircle, Database } from "lucide-react";
+import React, { useState, useRef } from "react";
+import { Download, CheckCircle2, AlertCircle, Database, Upload, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 
 const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
+
+function RestoreSection({ toast, BASE }: { toast: ReturnType<typeof useToast>["toast"]; BASE: string }) {
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [restoring, setRestoring] = useState(false);
+  const [result, setResult] = useState<{ restored: number; errors: string[] } | null>(null);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSelectedFile(e.target.files?.[0] ?? null);
+    setResult(null);
+  };
+
+  const handleRestore = async () => {
+    if (!selectedFile) return;
+    if (!confirm("This will INSERT records from the backup into the database. Existing records are not deleted. Continue?")) return;
+    setRestoring(true);
+    setResult(null);
+    try {
+      const text = await selectedFile.text();
+      const json = JSON.parse(text);
+      const res = await fetch(`${BASE}/api/admin/restore`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(json),
+      });
+      const data = await res.json() as { restored: number; errors: string[]; error?: string };
+      if (!res.ok) throw new Error(data.error ?? "Restore failed");
+      setResult({ restored: data.restored, errors: data.errors ?? [] });
+      toast({ title: "Restore Complete", description: `${data.restored} records inserted.${data.errors?.length ? ` ${data.errors.length} errors.` : ""}` });
+    } catch (err) {
+      toast({ title: "Restore Failed", description: String(err), variant: "destructive" });
+    } finally {
+      setRestoring(false);
+    }
+  };
+
+  return (
+    <div className="rounded-lg border border-zinc-700 bg-zinc-900 p-5 space-y-4">
+      <div className="flex items-center gap-3">
+        <RotateCcw className="w-5 h-5 text-amber-400" />
+        <div>
+          <p className="font-semibold text-zinc-100">Restore Backup</p>
+          <p className="text-xs text-zinc-500">Import records from a previously downloaded JSON backup file</p>
+        </div>
+      </div>
+      <div className="rounded-lg border border-amber-500/20 bg-amber-500/5 px-4 py-3 flex items-start gap-3">
+        <AlertCircle className="w-4 h-4 text-amber-400 mt-0.5 flex-shrink-0" />
+        <p className="text-xs text-zinc-300">
+          Restore <strong>adds</strong> records — it does NOT wipe existing data. Duplicates are silently skipped. Take a full backup before restoring.
+        </p>
+      </div>
+      <div className="flex items-center gap-3">
+        <input
+          ref={fileRef}
+          type="file"
+          accept=".json"
+          className="hidden"
+          onChange={handleFileChange}
+        />
+        <Button
+          variant="outline"
+          className="border-zinc-700 text-zinc-300 hover:bg-zinc-800"
+          onClick={() => fileRef.current?.click()}
+        >
+          <Upload className="w-4 h-4 mr-2" />
+          {selectedFile ? selectedFile.name : "Choose Backup File"}
+        </Button>
+        {selectedFile && (
+          <Button
+            className="bg-amber-600 hover:bg-amber-700 text-white"
+            onClick={handleRestore}
+            disabled={restoring}
+          >
+            <RotateCcw className={`w-4 h-4 mr-2 ${restoring ? "animate-spin" : ""}`} />
+            {restoring ? "Restoring..." : "Restore Backup"}
+          </Button>
+        )}
+      </div>
+      {result && (
+        <div className={`rounded-lg border px-4 py-3 text-sm ${result.errors.length > 0 ? "border-amber-500/30 bg-amber-500/5 text-amber-300" : "border-emerald-500/30 bg-emerald-500/5 text-emerald-300"}`}>
+          <p className="font-medium flex items-center gap-2">
+            <CheckCircle2 className="w-4 h-4" />
+            {result.restored} records restored successfully.
+            {result.errors.length > 0 && ` ${result.errors.length} error(s) encountered.`}
+          </p>
+          {result.errors.length > 0 && (
+            <ul className="mt-2 text-xs space-y-0.5 text-amber-400">
+              {result.errors.slice(0, 5).map((e, i) => <li key={i}>• {e}</li>)}
+            </ul>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
 
 const ENTITIES = [
   { key: "clients", label: "Clients", description: "Client profiles, contact info, rates", icon: "👥" },
@@ -55,6 +150,28 @@ export default function AdminExport() {
     }
   };
 
+  const handleFullBackup = async () => {
+    setDownloading("__backup__");
+    try {
+      const res = await fetch(`${BASE}/api/admin/backup`);
+      if (!res.ok) throw new Error("Backup failed");
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `va-full-backup-${new Date().toISOString().slice(0, 10)}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      toast({ title: "Full Backup Downloaded", description: "Complete JSON backup saved. Store it securely." });
+    } catch (err) {
+      toast({ title: "Backup Failed", description: String(err), variant: "destructive" });
+    } finally {
+      setDownloading(null);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -62,9 +179,14 @@ export default function AdminExport() {
           <h1 className="text-2xl font-bold text-white">Data Export</h1>
           <p className="text-zinc-400 text-sm mt-0.5">Download all data as CSV files for backup or analysis</p>
         </div>
-        <Button onClick={handleExportAll} disabled={!!downloading} className="bg-emerald-600 hover:bg-emerald-700 text-white">
-          <Download className="w-4 h-4 mr-2" />Export All
-        </Button>
+        <div className="flex gap-2">
+          <Button onClick={handleFullBackup} disabled={!!downloading} variant="outline" className="border-zinc-700 text-zinc-300 hover:bg-zinc-800">
+            <Database className="w-4 h-4 mr-2" />{downloading === "__backup__" ? "Backing up..." : "Full JSON Backup"}
+          </Button>
+          <Button onClick={handleExportAll} disabled={!!downloading} className="bg-emerald-600 hover:bg-emerald-700 text-white">
+            <Download className="w-4 h-4 mr-2" />Export All CSVs
+          </Button>
+        </div>
       </div>
 
       {/* Warning for sensitive data */}
@@ -119,6 +241,9 @@ export default function AdminExport() {
         <p className="font-medium text-zinc-400 mb-1">About CSV Exports</p>
         <p>All exports are generated in real-time directly from the database. Sensitive fields (passwords, tokens) are exported as-is — handle with care. Use these files for Excel analysis, backup archives, or migrating data to other systems.</p>
       </div>
+
+      {/* Restore Section */}
+      <RestoreSection toast={toast} BASE={BASE} />
     </div>
   );
 }
