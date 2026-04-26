@@ -6,7 +6,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Plus, Edit2, Trash2, TrendingUp } from 'lucide-react';
+import { Plus, Edit2, Trash2, TrendingUp, Download } from 'lucide-react';
+import { exportToCsv } from '@/lib/export-csv';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -135,7 +136,9 @@ export default function Earnings() {
           <h1 className="text-3xl font-bold tracking-tight">Earnings</h1>
           <p className="text-muted-foreground">Monthly earnings per client from eBay dropshipping.</p>
         </div>
-        <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => exportToCsv((earnings || []) as Record<string, unknown>[], 'earnings')}><Download className="w-4 h-4 mr-2" />Export CSV</Button>
+          <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
           <DialogTrigger asChild><Button><Plus className="w-4 h-4 mr-2" /> Record Earning</Button></DialogTrigger>
           <DialogContent className="max-w-md"><DialogHeader><DialogTitle>Record Earning</DialogTitle></DialogHeader>
             <Form {...addForm}><form onSubmit={addForm.handleSubmit(onAdd)} className="space-y-4">
@@ -143,7 +146,7 @@ export default function Earnings() {
               <DialogFooter><Button type="submit" disabled={createEarning.isPending}>Save</Button></DialogFooter>
             </form></Form>
           </DialogContent>
-        </Dialog>
+        </Dialog></div>
       </div>
 
       <div className="grid grid-cols-2 gap-4">
