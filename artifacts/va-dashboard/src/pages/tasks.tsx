@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useConfirm } from '@/components/confirm-dialog';
 import { useGetTasks, getGetTasksQueryKey, useCreateTask, useUpdateTask, useDeleteTask, useGetClients, getGetClientsQueryKey } from '@workspace/api-client-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
@@ -47,6 +48,7 @@ function StatusBadge({ status }: { status: string | null }) {
 export default function Tasks() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const confirm = useConfirm();
   const [search, setSearch] = useState('');
   const [isAddOpen, setIsAddOpen] = useState(false);
 
@@ -100,8 +102,8 @@ export default function Tasks() {
     });
   };
 
-  const handleDelete = (id: number, taskTitle: string) => {
-    if (confirm(`Delete task "${taskTitle}"?`)) {
+  const handleDelete = async (id: number, taskTitle: string) => {
+    if (await confirm({ title: 'Delete Task', description: `Delete "${taskTitle}"? This cannot be undone.`, confirmText: 'Delete', variant: 'destructive' })) {
       deleteTask.mutate({ id }, {
         onSuccess: () => {
           queryClient.invalidateQueries({ queryKey: getGetTasksQueryKey() });

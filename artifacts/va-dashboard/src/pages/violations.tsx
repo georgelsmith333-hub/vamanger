@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useConfirm } from '@/components/confirm-dialog';
 import { useGetViolations, getGetViolationsQueryKey, useCreateViolation, useUpdateViolation, useDeleteViolation, useGetClients, getGetClientsQueryKey } from '@workspace/api-client-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
@@ -39,6 +40,7 @@ function SeverityBadge({ severity }: { severity: string | null }) {
 export default function Violations() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const confirm = useConfirm();
   const [search, setSearch] = useState('');
   const [isAddOpen, setIsAddOpen] = useState(false);
 
@@ -93,8 +95,8 @@ export default function Violations() {
     });
   };
 
-  const handleDelete = (id: number) => {
-    if (confirm('Delete this violation record?')) {
+  const handleDelete = async (id: number) => {
+    if (await confirm({ title: 'Delete Violation', description: 'Delete this violation record? This cannot be undone.', confirmText: 'Delete', variant: 'destructive' })) {
       deleteViolation.mutate({ id }, {
         onSuccess: () => {
           queryClient.invalidateQueries({ queryKey: getGetViolationsQueryKey() });

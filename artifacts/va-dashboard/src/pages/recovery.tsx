@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useConfirm } from '@/components/confirm-dialog';
 import { useGetRecoveryEntries, getGetRecoveryEntriesQueryKey, useCreateRecoveryEntry, useUpdateRecoveryEntry, useDeleteRecoveryEntry, useGetClients, getGetClientsQueryKey } from '@workspace/api-client-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -44,6 +45,7 @@ function MaskedField({ value }: { value: string | null | undefined }) {
 export default function Recovery() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const confirm = useConfirm();
   const [search, setSearch] = useState('');
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [editingEntry, setEditingEntry] = useState<RecoveryEntry | null>(null);
@@ -95,8 +97,8 @@ export default function Recovery() {
     });
   };
 
-  const handleDelete = (id: number, service: string) => {
-    if (confirm(`Delete recovery entry for ${service}?`)) {
+  const handleDelete = async (id: number, service: string) => {
+    if (await confirm({ title: 'Delete Recovery Entry', description: `Delete recovery entry for ${service}? This cannot be undone.`, confirmText: 'Delete', variant: 'destructive' })) {
       deleteEntry.mutate({ id }, {
         onSuccess: () => {
           queryClient.invalidateQueries({ queryKey: getGetRecoveryEntriesQueryKey() });

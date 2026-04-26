@@ -4,6 +4,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Layout } from "@/components/layout";
 import NotFound from "@/pages/not-found";
+import { ConfirmProvider } from "@/components/confirm-dialog";
 
 import Dashboard from "@/pages/dashboard";
 import Clients from "@/pages/clients";
@@ -18,6 +19,7 @@ import Expenses from "@/pages/expenses";
 import Recovery from "@/pages/recovery";
 import DailyLogin from "@/pages/daily-login";
 import UserManual from "@/pages/user-manual";
+import SheetsSync from "@/pages/sheets-sync";
 import Admin from "@/pages/admin/index";
 import AdminLogin from "@/pages/admin/login";
 
@@ -61,6 +63,7 @@ function Router() {
         <Route path="/recovery" component={Recovery} />
         <Route path="/daily-login" component={DailyLogin} />
         <Route path="/manual" component={UserManual} />
+        <Route path="/sheets-sync" component={SheetsSync} />
         <Route component={NotFound} />
       </Switch>
     </Layout>
@@ -71,10 +74,12 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-        <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
-          <Router />
-        </WouterRouter>
-        <Toaster />
+        <ConfirmProvider>
+          <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
+            <Router />
+          </WouterRouter>
+          <Toaster />
+        </ConfirmProvider>
       </TooltipProvider>
     </QueryClientProvider>
   );

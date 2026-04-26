@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useConfirm } from '@/components/confirm-dialog';
 import { useGetInvoices, getGetInvoicesQueryKey, useCreateInvoice, useUpdateInvoice, useDeleteInvoice, useGetClients, getGetClientsQueryKey } from '@workspace/api-client-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
@@ -40,6 +41,7 @@ function StatusBadge({ status }: { status: string }) {
 export default function Invoices() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const confirm = useConfirm();
   const [search, setSearch] = useState('');
   const [isAddOpen, setIsAddOpen] = useState(false);
 
@@ -94,8 +96,8 @@ export default function Invoices() {
     });
   };
 
-  const handleDelete = (id: number, invoiceNumber: string) => {
-    if (confirm(`Delete invoice ${invoiceNumber}? This cannot be undone.`)) {
+  const handleDelete = async (id: number, invoiceNumber: string) => {
+    if (await confirm({ title: 'Delete Invoice', description: `Delete invoice ${invoiceNumber}? This cannot be undone.`, confirmText: 'Delete', variant: 'destructive' })) {
       deleteInvoice.mutate({ id }, {
         onSuccess: () => {
           queryClient.invalidateQueries({ queryKey: getGetInvoicesQueryKey() });

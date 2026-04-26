@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useConfirm } from '@/components/confirm-dialog';
 import { useGetWiseCards, getGetWiseCardsQueryKey, useCreateWiseCard, useUpdateWiseCard, useDeleteWiseCard, useGetClients, getGetClientsQueryKey } from '@workspace/api-client-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -37,6 +38,7 @@ type Card = FormData & { id: number; clientName?: string; daysToExpiry?: number 
 export default function WiseCards() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const confirm = useConfirm();
   const [search, setSearch] = useState('');
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [editingCard, setEditingCard] = useState<Card | null>(null);
@@ -93,8 +95,8 @@ export default function WiseCards() {
     });
   };
 
-  const handleDelete = (id: number, holder: string) => {
-    if (confirm(`Remove card for ${holder}?`)) {
+  const handleDelete = async (id: number, holder: string) => {
+    if (await confirm({ title: 'Remove Wise Card', description: `Remove card for ${holder}? This cannot be undone.`, confirmText: 'Remove', variant: 'destructive' })) {
       deleteCard.mutate({ id }, {
         onSuccess: () => {
           queryClient.invalidateQueries({ queryKey: getGetWiseCardsQueryKey() });

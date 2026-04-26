@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useConfirm } from '@/components/confirm-dialog';
 import { useGetClients, getGetClientsQueryKey, useCreateClient, useUpdateClient, useDeleteClient } from '@workspace/api-client-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -31,6 +32,7 @@ type Client = { id: number; clientName: string; status: string; serviceType?: st
 export default function Clients() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const confirm = useConfirm();
   const [search, setSearch] = useState('');
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [editingClient, setEditingClient] = useState<Client | null>(null);
@@ -86,8 +88,8 @@ export default function Clients() {
     });
   };
 
-  const handleDelete = (id: number, name: string) => {
-    if (confirm(`Delete client "${name}"? This cannot be undone.`)) {
+  const handleDelete = async (id: number, name: string) => {
+    if (await confirm({ title: 'Delete Client', description: `Permanently delete "${name}"? This cannot be undone.`, confirmText: 'Delete', variant: 'destructive' })) {
       deleteClient.mutate({ id }, {
         onSuccess: () => {
           queryClient.invalidateQueries({ queryKey: getGetClientsQueryKey() });
