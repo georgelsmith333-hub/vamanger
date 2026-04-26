@@ -11,6 +11,7 @@ import {
   GetInvoicesSummaryResponse,
 } from "@workspace/api-zod";
 import { serializeDates } from "../lib/serialize";
+import { logAudit } from "../lib/audit";
 
 const router = Router();
 
@@ -64,6 +65,14 @@ router.post("/invoices", async (req, res): Promise<void> => {
     description: `Invoice ${invoice.invoiceNumber} created for $${Number(invoice.amount).toFixed(2)}`,
     clientName,
   });
+  await logAudit({
+    action: "CREATE",
+    tableName: "invoices",
+    recordId: invoice.id,
+    description: `Invoice ${invoice.invoiceNumber} created for ${clientName} — $${Number(invoice.amount).toFixed(2)}`,
+    previousData: null,
+    newData: { ...invoice } as Record<string, unknown>,
+  });
   res.status(201).json(enrichInvoice(invoice, clients));
 });
 
@@ -78,6 +87,7 @@ router.patch("/invoices/:id", async (req, res): Promise<void> => {
     res.status(400).json({ error: parsed.error.message });
     return;
   }
+  const [before] = await db.select().from(invoicesTable).where(eq(invoicesTable.id, params.data.id));
   const updateData: Record<string, unknown> = {};
   for (const [k, v] of Object.entries(parsed.data)) {
     if (v !== undefined) updateData[k] = v;
@@ -88,14 +98,22 @@ router.patch("/invoices/:id", async (req, res): Promise<void> => {
     return;
   }
   const clients = await db.select({ id: clientsTable.id, clientName: clientsTable.clientName }).from(clientsTable);
+  const clientName = clients.find((c) => c.id === invoice.clientId)?.clientName ?? "Unknown";
   if (invoice.status === "Paid") {
-    const clientName = clients.find((c) => c.id === invoice.clientId)?.clientName ?? "Unknown";
     await db.insert(activityTable).values({
       type: "invoice_paid",
       description: `Invoice ${invoice.invoiceNumber} marked as paid`,
       clientName,
     });
   }
+  await logAudit({
+    action: "UPDATE",
+    tableName: "invoices",
+    recordId: invoice.id,
+    description: `Invoice ${invoice.invoiceNumber} updated (status: ${invoice.status})`,
+    previousData: before ? ({ ...before } as Record<string, unknown>) : null,
+    newData: { ...invoice } as Record<string, unknown>,
+  });
   res.json(UpdateInvoiceResponse.parse(enrichInvoice(invoice, clients)));
 });
 
@@ -105,7 +123,18 @@ router.delete("/invoices/:id", async (req, res): Promise<void> => {
     res.status(400).json({ error: params.error.message });
     return;
   }
+  const [before] = await db.select().from(invoicesTable).where(eq(invoicesTable.id, params.data.id));
   await db.delete(invoicesTable).where(eq(invoicesTable.id, params.data.id));
+  if (before) {
+    await logAudit({
+      action: "DELETE",
+      tableName: "invoices",
+      recordId: params.data.id,
+      description: `Invoice ${before.invoiceNumber} deleted ($${Number(before.amount).toFixed(2)})`,
+      previousData: { ...before } as Record<string, unknown>,
+      newData: null,
+    });
+  }
   res.sendStatus(204);
 });
 

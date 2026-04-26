@@ -10,3 +10,5 @@ export * from "./expenses";
 export * from "./recovery";
 export * from "./daily-logins";
 export * from "./activity";
+export * from "./audit-log";
+export * from "./settings";

@@ -12,6 +12,7 @@ import {
   UpdateClientResponse,
 } from "@workspace/api-zod";
 import { serializeDates } from "../lib/serialize";
+import { logAudit } from "../lib/audit";
 
 const router = Router();
 
@@ -46,6 +47,14 @@ router.post("/clients", async (req, res): Promise<void> => {
     description: `New client added: ${client.clientName}`,
     clientName: client.clientName,
   });
+  await logAudit({
+    action: "CREATE",
+    tableName: "clients",
+    recordId: client.id,
+    description: `Client created: ${client.clientName}`,
+    previousData: null,
+    newData: { ...client } as Record<string, unknown>,
+  });
   res.status(201).json(GetClientResponse.parse(toClient(client, 0)));
 });
 
@@ -75,6 +84,8 @@ router.patch("/clients/:id", async (req, res): Promise<void> => {
     res.status(400).json({ error: parsed.error.message });
     return;
   }
+  // Capture previous state for undo
+  const [before] = await db.select().from(clientsTable).where(eq(clientsTable.id, params.data.id));
   const updateData: Record<string, unknown> = {};
   for (const [k, v] of Object.entries(parsed.data)) {
     if (v !== undefined) updateData[k] = v;
@@ -84,6 +95,14 @@ router.patch("/clients/:id", async (req, res): Promise<void> => {
     res.status(404).json({ error: "Client not found" });
     return;
   }
+  await logAudit({
+    action: "UPDATE",
+    tableName: "clients",
+    recordId: client.id,
+    description: `Client updated: ${client.clientName}`,
+    previousData: before ? ({ ...before } as Record<string, unknown>) : null,
+    newData: { ...client } as Record<string, unknown>,
+  });
   const accounts = await db.select().from(ebayAccountsTable).where(eq(ebayAccountsTable.clientId, client.id));
   res.json(UpdateClientResponse.parse(toClient(client, accounts.length)));
 });
@@ -94,7 +113,23 @@ router.delete("/clients/:id", async (req, res): Promise<void> => {
     res.status(400).json({ error: params.error.message });
     return;
   }
+  const [before] = await db.select().from(clientsTable).where(eq(clientsTable.id, params.data.id));
   await db.delete(clientsTable).where(eq(clientsTable.id, params.data.id));
+  if (before) {
+    await logAudit({
+      action: "DELETE",
+      tableName: "clients",
+      recordId: params.data.id,
+      description: `Client deleted: ${before.clientName}`,
+      previousData: { ...before } as Record<string, unknown>,
+      newData: null,
+    });
+    await db.insert(activityTable).values({
+      type: "client_deleted",
+      description: `Client removed: ${before.clientName}`,
+      clientName: before.clientName,
+    });
+  }
   res.sendStatus(204);
 });
 

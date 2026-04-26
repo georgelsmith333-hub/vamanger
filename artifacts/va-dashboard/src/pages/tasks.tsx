@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useGetTasks, getGetTasksQueryKey, useCreateTask, useUpdateTask, useDeleteTask, useGetClients, getGetClientsQueryKey } from '@workspace/api-client-react';
 import { useQueryClient } from '@tanstack/react-query';
+import { useToast } from '@/hooks/use-toast';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -45,6 +46,7 @@ function StatusBadge({ status }: { status: string | null }) {
 
 export default function Tasks() {
   const queryClient = useQueryClient();
+  const { toast } = useToast();
   const [search, setSearch] = useState('');
   const [isAddOpen, setIsAddOpen] = useState(false);
 
@@ -58,19 +60,35 @@ export default function Tasks() {
 
   const onSubmit = (data: z.infer<typeof schema>) => {
     createTask.mutate({ data }, {
-      onSuccess: () => { queryClient.invalidateQueries({ queryKey: getGetTasksQueryKey() }); setIsAddOpen(false); form.reset(); },
+      onSuccess: (task) => {
+        queryClient.invalidateQueries({ queryKey: getGetTasksQueryKey() });
+        setIsAddOpen(false);
+        form.reset();
+        toast({ title: 'Task created', description: `"${(task as { task?: string }).task || 'Task'}" added successfully.` });
+      },
+      onError: () => toast({ title: 'Error', description: 'Failed to create task.', variant: 'destructive' }),
     });
   };
 
-  const handleToggleDone = (id: number, done: boolean) => {
+  const handleToggleDone = (id: number, done: boolean, taskTitle: string) => {
     updateTask.mutate({ id, data: { done: !done, status: !done ? 'Done' : 'In Progress' } }, {
-      onSuccess: () => queryClient.invalidateQueries({ queryKey: getGetTasksQueryKey() }),
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: getGetTasksQueryKey() });
+        toast({ title: !done ? 'Task completed' : 'Task reopened', description: `"${taskTitle}" marked as ${!done ? 'done' : 'in progress'}.` });
+      },
+      onError: () => toast({ title: 'Error', description: 'Failed to update task.', variant: 'destructive' }),
     });
   };
 
-  const handleDelete = (id: number) => {
-    if (confirm('Delete this task?')) {
-      deleteTask.mutate({ id }, { onSuccess: () => queryClient.invalidateQueries({ queryKey: getGetTasksQueryKey() }) });
+  const handleDelete = (id: number, taskTitle: string) => {
+    if (confirm(`Delete task "${taskTitle}"?`)) {
+      deleteTask.mutate({ id }, {
+        onSuccess: () => {
+          queryClient.invalidateQueries({ queryKey: getGetTasksQueryKey() });
+          toast({ title: 'Task deleted', description: `"${taskTitle}" has been removed.`, variant: 'destructive' });
+        },
+        onError: () => toast({ title: 'Error', description: 'Failed to delete task.', variant: 'destructive' }),
+      });
     }
   };
 
@@ -152,7 +170,7 @@ export default function Tasks() {
               return (
                 <TableRow key={t.id} className={t.done ? 'opacity-60' : isOverdue ? 'bg-destructive/5' : ''}>
                   <TableCell>
-                    <button onClick={() => handleToggleDone(t.id, t.done ?? false)} className="text-muted-foreground hover:text-primary">
+                    <button onClick={() => handleToggleDone(t.id, t.done ?? false, t.task)} className="text-muted-foreground hover:text-primary">
                       {t.done ? <CheckCircle2 className="w-5 h-5 text-emerald-500" /> : <Circle className="w-5 h-5" />}
                     </button>
                   </TableCell>
@@ -165,7 +183,7 @@ export default function Tasks() {
                   </TableCell>
                   <TableCell><StatusBadge status={t.status} /></TableCell>
                   <TableCell className="text-right">
-                    <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/10" onClick={() => handleDelete(t.id)}>
+                    <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/10" onClick={() => handleDelete(t.id, t.task)}>
                       <Trash2 className="h-4 w-4" />
                     </Button>
                   </TableCell>

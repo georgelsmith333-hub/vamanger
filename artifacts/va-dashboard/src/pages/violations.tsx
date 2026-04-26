@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useGetViolations, getGetViolationsQueryKey, useCreateViolation, useUpdateViolation, useDeleteViolation, useGetClients, getGetClientsQueryKey } from '@workspace/api-client-react';
 import { useQueryClient } from '@tanstack/react-query';
+import { useToast } from '@/hooks/use-toast';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -37,6 +38,7 @@ function SeverityBadge({ severity }: { severity: string | null }) {
 
 export default function Violations() {
   const queryClient = useQueryClient();
+  const { toast } = useToast();
   const [search, setSearch] = useState('');
   const [isAddOpen, setIsAddOpen] = useState(false);
 
@@ -50,19 +52,35 @@ export default function Violations() {
 
   const onSubmit = (data: z.infer<typeof schema>) => {
     createViolation.mutate({ data }, {
-      onSuccess: () => { queryClient.invalidateQueries({ queryKey: getGetViolationsQueryKey() }); setIsAddOpen(false); form.reset(); },
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: getGetViolationsQueryKey() });
+        setIsAddOpen(false);
+        form.reset();
+        toast({ title: 'Violation logged', description: 'Policy violation has been recorded.' });
+      },
+      onError: () => toast({ title: 'Error', description: 'Failed to log violation.', variant: 'destructive' }),
     });
   };
 
-  const handleResolve = (id: number) => {
+  const handleResolve = (id: number, clientName: string) => {
     updateViolation.mutate({ id, data: { resolved: true } }, {
-      onSuccess: () => queryClient.invalidateQueries({ queryKey: getGetViolationsQueryKey() }),
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: getGetViolationsQueryKey() });
+        toast({ title: 'Violation resolved', description: `${clientName}'s violation has been marked as resolved.` });
+      },
+      onError: () => toast({ title: 'Error', description: 'Failed to resolve violation.', variant: 'destructive' }),
     });
   };
 
   const handleDelete = (id: number) => {
-    if (confirm('Delete this violation?')) {
-      deleteViolation.mutate({ id }, { onSuccess: () => queryClient.invalidateQueries({ queryKey: getGetViolationsQueryKey() }) });
+    if (confirm('Delete this violation record?')) {
+      deleteViolation.mutate({ id }, {
+        onSuccess: () => {
+          queryClient.invalidateQueries({ queryKey: getGetViolationsQueryKey() });
+          toast({ title: 'Violation deleted', description: 'The violation record has been removed.', variant: 'destructive' });
+        },
+        onError: () => toast({ title: 'Error', description: 'Failed to delete violation.', variant: 'destructive' }),
+      });
     }
   };
 
@@ -153,7 +171,7 @@ export default function Violations() {
                 <TableCell className="text-right">
                   <div className="flex justify-end gap-2">
                     {!v.resolved && (
-                      <Button variant="ghost" size="sm" className="text-emerald-500 h-8 px-2 text-xs" onClick={() => handleResolve(v.id)}>
+                      <Button variant="ghost" size="sm" className="text-emerald-500 h-8 px-2 text-xs" onClick={() => handleResolve(v.id, v.clientName || 'Client')}>
                         <ShieldCheck className="w-3 h-3 mr-1" />Resolve
                       </Button>
                     )}
