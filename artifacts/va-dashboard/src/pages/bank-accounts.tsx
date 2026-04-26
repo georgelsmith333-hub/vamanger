@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useConfirm } from '@/components/confirm-dialog';
 import { useGetBankAccounts, getGetBankAccountsQueryKey, useCreateBankAccount, useUpdateBankAccount, useDeleteBankAccount, useGetClients, getGetClientsQueryKey } from '@workspace/api-client-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -38,6 +39,7 @@ type BankAccount = FormData & { id: number; clientName?: string | null };
 export default function BankAccounts() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const confirm = useConfirm();
   const [search, setSearch] = useState('');
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [editingAccount, setEditingAccount] = useState<BankAccount | null>(null);
@@ -95,8 +97,8 @@ export default function BankAccounts() {
     });
   };
 
-  const handleDelete = (id: number, label: string) => {
-    if (confirm(`Remove bank account: ${label}?`)) {
+  const handleDelete = async (id: number, label: string) => {
+    if (await confirm({ title: 'Remove Bank Account', description: `Remove ${label}? This cannot be undone.`, confirmText: 'Remove', variant: 'destructive' })) {
       deleteAccount.mutate({ id }, {
         onSuccess: () => {
           queryClient.invalidateQueries({ queryKey: getGetBankAccountsQueryKey() });

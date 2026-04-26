@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useConfirm } from '@/components/confirm-dialog';
 import { useGetEarnings, getGetEarningsQueryKey, useCreateEarning, useUpdateEarning, useDeleteEarning, useGetClients, getGetClientsQueryKey } from '@workspace/api-client-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -32,6 +33,7 @@ type Earning = FormData & { id: number; clientName?: string | null };
 export default function Earnings() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const confirm = useConfirm();
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [editingEarning, setEditingEarning] = useState<Earning | null>(null);
 
@@ -73,8 +75,8 @@ export default function Earnings() {
     });
   };
 
-  const handleDelete = (id: number, label: string) => {
-    if (confirm(`Delete earnings record for ${label}?`)) {
+  const handleDelete = async (id: number, label: string) => {
+    if (await confirm({ title: 'Delete Earnings Record', description: `Delete earnings for ${label}? This cannot be undone.`, confirmText: 'Delete', variant: 'destructive' })) {
       deleteEarning.mutate({ id }, {
         onSuccess: () => {
           queryClient.invalidateQueries({ queryKey: getGetEarningsQueryKey() });

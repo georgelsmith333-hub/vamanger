@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useConfirm } from '@/components/confirm-dialog';
 import { useGetExpenses, getGetExpensesQueryKey, useCreateExpense, useUpdateExpense, useDeleteExpense, useGetClients, getGetClientsQueryKey } from '@workspace/api-client-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -34,6 +35,7 @@ type Expense = FormData & { id: number; clientName?: string | null };
 export default function Expenses() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const confirm = useConfirm();
   const [search, setSearch] = useState('');
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
@@ -86,8 +88,8 @@ export default function Expenses() {
     });
   };
 
-  const handleDelete = (id: number, vendor: string) => {
-    if (confirm(`Delete expense from ${vendor}?`)) {
+  const handleDelete = async (id: number, vendor: string) => {
+    if (await confirm({ title: 'Delete Expense', description: `Delete expense from ${vendor}? This cannot be undone.`, confirmText: 'Delete', variant: 'destructive' })) {
       deleteExpense.mutate({ id }, {
         onSuccess: () => {
           queryClient.invalidateQueries({ queryKey: getGetExpensesQueryKey() });

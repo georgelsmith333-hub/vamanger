@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useConfirm } from "@/components/confirm-dialog";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { adminFetch, adminPost, type AuditEntry } from "@/lib/admin-api";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -29,6 +30,7 @@ const TABLES = ["clients", "ebay_accounts", "wise_cards", "bank_accounts", "invo
 export default function AdminActivity() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const confirm = useConfirm();
   const [search, setSearch] = useState("");
   const [tableFilter, setTableFilter] = useState("all");
   const [actionFilter, setActionFilter] = useState("all");
@@ -154,8 +156,8 @@ export default function AdminActivity() {
                     <Button
                       size="sm"
                       variant="ghost"
-                      onClick={() => {
-                        if (confirm(`Undo: "${entry.description}"?\n\nThis will revert the data change.`)) {
+                      onClick={async () => {
+                        if (await confirm({ title: 'Undo Action', description: `Undo: "${entry.description}"? This will revert the data change.`, confirmText: 'Undo', variant: 'warning' })) {
                           undoMutation.mutate(entry.id);
                         }
                       }}

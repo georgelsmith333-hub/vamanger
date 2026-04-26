@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useConfirm } from '@/components/confirm-dialog';
 import { useGetEbayAccounts, getGetEbayAccountsQueryKey, useCreateEbayAccount, useUpdateEbayAccount, useDeleteEbayAccount, useGetClients, getGetClientsQueryKey } from '@workspace/api-client-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -44,6 +45,7 @@ function HealthBadge({ health }: { health: string | null | undefined }) {
 export default function EbayAccounts() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const confirm = useConfirm();
   const [search, setSearch] = useState('');
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [editingAccount, setEditingAccount] = useState<Account | null>(null);
@@ -97,8 +99,8 @@ export default function EbayAccounts() {
     });
   };
 
-  const handleDelete = (id: number, username: string) => {
-    if (confirm(`Remove eBay account "${username}"?`)) {
+  const handleDelete = async (id: number, username: string) => {
+    if (await confirm({ title: 'Remove eBay Account', description: `Remove "${username}"? All associated data will be unlinked.`, confirmText: 'Remove', variant: 'destructive' })) {
       deleteAccount.mutate({ id }, {
         onSuccess: () => {
           queryClient.invalidateQueries({ queryKey: getGetEbayAccountsQueryKey() });
