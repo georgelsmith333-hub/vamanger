@@ -1,0 +1,8 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "CIELXveReKiyjWEHQp4HB"
+uri = "file://attached_assets/guides/VA-Manager-Setup-Guide.pdf"
+type = "pdf"
+title = "VA Manager — OAuth Login & Google Sheets Setup Guide"
