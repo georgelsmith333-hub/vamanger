@@ -3,20 +3,44 @@ info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: VA eBay Client Manager API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: clients
+    description: Client management
+  - name: ebay-accounts
+    description: eBay account management
+  - name: wise-cards
+    description: Wise & card management
+  - name: bank-accounts
+    description: Bank account management
+  - name: invoices
+    description: Invoice management
+  - name: violations
+    description: Policy violation management
+  - name: tasks
+    description: Task management
+  - name: earnings
+    description: Earnings summaries
+  - name: expenses
+    description: Business expenses
+  - name: recovery
+    description: Recovery & 2FA vault
+  - name: daily-login
+    description: Daily login tracker
+  - name: dashboard
+    description: Dashboard KPIs and summaries
+
 paths:
   /healthz:
     get:
       operationId: healthCheck
       tags: [health]
       summary: Health check
-      description: Returns server health status
       responses:
         "200":
           description: Healthy
@@ -24,6 +48,887 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  # ── Dashboard ──────────────────────────────────────────────────────────────
+  /dashboard/summary:
+    get:
+      operationId: getDashboardSummary
+      tags: [dashboard]
+      summary: Get dashboard KPI summary
+      responses:
+        "200":
+          description: Dashboard summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DashboardSummary"
+
+  /dashboard/recent-activity:
+    get:
+      operationId: getDashboardRecentActivity
+      tags: [dashboard]
+      summary: Get recent activity feed
+      responses:
+        "200":
+          description: Recent activity
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ActivityItem"
+
+  # ── Clients ────────────────────────────────────────────────────────────────
+  /clients:
+    get:
+      operationId: getClients
+      tags: [clients]
+      summary: List all clients
+      responses:
+        "200":
+          description: List of clients
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Client"
+    post:
+      operationId: createClient
+      tags: [clients]
+      summary: Create a new client
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateClientBody"
+      responses:
+        "201":
+          description: Created client
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Client"
+
+  /clients/{id}:
+    get:
+      operationId: getClient
+      tags: [clients]
+      summary: Get a client by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Client
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Client"
+        "404":
+          description: Not found
+    patch:
+      operationId: updateClient
+      tags: [clients]
+      summary: Update a client
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateClientBody"
+      responses:
+        "200":
+          description: Updated client
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Client"
+    delete:
+      operationId: deleteClient
+      tags: [clients]
+      summary: Delete a client
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  # ── eBay Accounts ──────────────────────────────────────────────────────────
+  /ebay-accounts:
+    get:
+      operationId: getEbayAccounts
+      tags: [ebay-accounts]
+      summary: List all eBay accounts
+      parameters:
+        - name: clientId
+          in: query
+          schema:
+            type: ["integer", "null"]
+      responses:
+        "200":
+          description: List of eBay accounts
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/EbayAccount"
+    post:
+      operationId: createEbayAccount
+      tags: [ebay-accounts]
+      summary: Create eBay account
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateEbayAccountBody"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EbayAccount"
+
+  /ebay-accounts/{id}:
+    get:
+      operationId: getEbayAccount
+      tags: [ebay-accounts]
+      summary: Get eBay account
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: eBay account
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EbayAccount"
+        "404":
+          description: Not found
+    patch:
+      operationId: updateEbayAccount
+      tags: [ebay-accounts]
+      summary: Update eBay account
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateEbayAccountBody"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EbayAccount"
+    delete:
+      operationId: deleteEbayAccount
+      tags: [ebay-accounts]
+      summary: Delete eBay account
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  # ── Wise & Cards ───────────────────────────────────────────────────────────
+  /wise-cards:
+    get:
+      operationId: getWiseCards
+      tags: [wise-cards]
+      summary: List all Wise cards
+      parameters:
+        - name: clientId
+          in: query
+          schema:
+            type: ["integer", "null"]
+      responses:
+        "200":
+          description: List of cards
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/WiseCard"
+    post:
+      operationId: createWiseCard
+      tags: [wise-cards]
+      summary: Create Wise card
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateWiseCardBody"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WiseCard"
+
+  /wise-cards/{id}:
+    patch:
+      operationId: updateWiseCard
+      tags: [wise-cards]
+      summary: Update Wise card
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateWiseCardBody"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WiseCard"
+    delete:
+      operationId: deleteWiseCard
+      tags: [wise-cards]
+      summary: Delete Wise card
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  # ── Bank Accounts ──────────────────────────────────────────────────────────
+  /bank-accounts:
+    get:
+      operationId: getBankAccounts
+      tags: [bank-accounts]
+      summary: List all bank accounts
+      responses:
+        "200":
+          description: List
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/BankAccount"
+    post:
+      operationId: createBankAccount
+      tags: [bank-accounts]
+      summary: Create bank account
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateBankAccountBody"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BankAccount"
+
+  /bank-accounts/{id}:
+    patch:
+      operationId: updateBankAccount
+      tags: [bank-accounts]
+      summary: Update bank account
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateBankAccountBody"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BankAccount"
+    delete:
+      operationId: deleteBankAccount
+      tags: [bank-accounts]
+      summary: Delete bank account
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  # ── Invoices ───────────────────────────────────────────────────────────────
+  /invoices:
+    get:
+      operationId: getInvoices
+      tags: [invoices]
+      summary: List all invoices
+      responses:
+        "200":
+          description: List
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Invoice"
+    post:
+      operationId: createInvoice
+      tags: [invoices]
+      summary: Create invoice
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateInvoiceBody"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Invoice"
+
+  /invoices/{id}:
+    patch:
+      operationId: updateInvoice
+      tags: [invoices]
+      summary: Update invoice
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateInvoiceBody"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Invoice"
+    delete:
+      operationId: deleteInvoice
+      tags: [invoices]
+      summary: Delete invoice
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  /invoices/summary:
+    get:
+      operationId: getInvoicesSummary
+      tags: [invoices]
+      summary: Get invoice financial summary
+      responses:
+        "200":
+          description: Invoice summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InvoicesSummary"
+
+  # ── Violations ─────────────────────────────────────────────────────────────
+  /violations:
+    get:
+      operationId: getViolations
+      tags: [violations]
+      summary: List all violations
+      responses:
+        "200":
+          description: List
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Violation"
+    post:
+      operationId: createViolation
+      tags: [violations]
+      summary: Create violation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateViolationBody"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Violation"
+
+  /violations/{id}:
+    patch:
+      operationId: updateViolation
+      tags: [violations]
+      summary: Update violation
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateViolationBody"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Violation"
+    delete:
+      operationId: deleteViolation
+      tags: [violations]
+      summary: Delete violation
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  # ── Tasks ──────────────────────────────────────────────────────────────────
+  /tasks:
+    get:
+      operationId: getTasks
+      tags: [tasks]
+      summary: List all tasks
+      responses:
+        "200":
+          description: List
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Task"
+    post:
+      operationId: createTask
+      tags: [tasks]
+      summary: Create task
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateTaskBody"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Task"
+
+  /tasks/{id}:
+    patch:
+      operationId: updateTask
+      tags: [tasks]
+      summary: Update task
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateTaskBody"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Task"
+    delete:
+      operationId: deleteTask
+      tags: [tasks]
+      summary: Delete task
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  # ── Earnings ───────────────────────────────────────────────────────────────
+  /earnings:
+    get:
+      operationId: getEarnings
+      tags: [earnings]
+      summary: List earnings records
+      responses:
+        "200":
+          description: List
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Earning"
+    post:
+      operationId: createEarning
+      tags: [earnings]
+      summary: Create earning record
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateEarningBody"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Earning"
+
+  /earnings/{id}:
+    patch:
+      operationId: updateEarning
+      tags: [earnings]
+      summary: Update earning
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateEarningBody"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Earning"
+    delete:
+      operationId: deleteEarning
+      tags: [earnings]
+      summary: Delete earning
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  /earnings/summary:
+    get:
+      operationId: getEarningsSummary
+      tags: [earnings]
+      summary: Get earnings summary by client and month
+      responses:
+        "200":
+          description: Earnings summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EarningsSummary"
+
+  # ── Expenses ───────────────────────────────────────────────────────────────
+  /expenses:
+    get:
+      operationId: getExpenses
+      tags: [expenses]
+      summary: List all expenses
+      responses:
+        "200":
+          description: List
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Expense"
+    post:
+      operationId: createExpense
+      tags: [expenses]
+      summary: Create expense
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateExpenseBody"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Expense"
+
+  /expenses/{id}:
+    patch:
+      operationId: updateExpense
+      tags: [expenses]
+      summary: Update expense
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateExpenseBody"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Expense"
+    delete:
+      operationId: deleteExpense
+      tags: [expenses]
+      summary: Delete expense
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  # ── Recovery & 2FA ─────────────────────────────────────────────────────────
+  /recovery:
+    get:
+      operationId: getRecoveryEntries
+      tags: [recovery]
+      summary: List all recovery entries
+      responses:
+        "200":
+          description: List
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/RecoveryEntry"
+    post:
+      operationId: createRecoveryEntry
+      tags: [recovery]
+      summary: Create recovery entry
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateRecoveryEntryBody"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecoveryEntry"
+
+  /recovery/{id}:
+    patch:
+      operationId: updateRecoveryEntry
+      tags: [recovery]
+      summary: Update recovery entry
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateRecoveryEntryBody"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecoveryEntry"
+    delete:
+      operationId: deleteRecoveryEntry
+      tags: [recovery]
+      summary: Delete recovery entry
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  # ── Daily Login ────────────────────────────────────────────────────────────
+  /daily-logins:
+    get:
+      operationId: getDailyLogins
+      tags: [daily-login]
+      summary: List daily login records
+      parameters:
+        - name: year
+          in: query
+          schema:
+            type: ["integer", "null"]
+        - name: month
+          in: query
+          schema:
+            type: ["integer", "null"]
+      responses:
+        "200":
+          description: List
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/DailyLogin"
+    post:
+      operationId: createDailyLogin
+      tags: [daily-login]
+      summary: Create or update daily login record
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateDailyLoginBody"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DailyLogin"
+
+  /daily-logins/{id}:
+    patch:
+      operationId: updateDailyLogin
+      tags: [daily-login]
+      summary: Update daily login
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateDailyLoginBody"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DailyLogin"
+
 components:
   schemas:
     HealthStatus:
@@ -31,6 +936,1101 @@ components:
       properties:
         status:
           type: string
-      required:
-        - status
+      required: [status]
 
+    DashboardSummary:
+      type: object
+      properties:
+        totalClients:
+          type: integer
+        activeClients:
+          type: integer
+        totalEbayAccounts:
+          type: integer
+        accountsWithIssues:
+          type: integer
+        overdueInvoicesCount:
+          type: integer
+        overdueInvoicesAmount:
+          type: number
+        pendingTasksCount:
+          type: integer
+        overdueTasksCount:
+          type: integer
+        expiringCardsCount:
+          type: integer
+        openViolationsCount:
+          type: integer
+        totalRevenueThisMonth:
+          type: number
+        totalExpensesThisMonth:
+          type: number
+        netProfitThisMonth:
+          type: number
+      required:
+        - totalClients
+        - activeClients
+        - totalEbayAccounts
+        - accountsWithIssues
+        - overdueInvoicesCount
+        - overdueInvoicesAmount
+        - pendingTasksCount
+        - overdueTasksCount
+        - expiringCardsCount
+        - openViolationsCount
+        - totalRevenueThisMonth
+        - totalExpensesThisMonth
+        - netProfitThisMonth
+
+    ActivityItem:
+      type: object
+      properties:
+        id:
+          type: integer
+        type:
+          type: string
+        description:
+          type: string
+        clientName:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+      required: [id, type, description, createdAt]
+
+    Client:
+      type: object
+      properties:
+        id:
+          type: integer
+        clientName:
+          type: string
+        businessBrand:
+          type: ["string", "null"]
+        country:
+          type: ["string", "null"]
+        email:
+          type: ["string", "null"]
+        phone:
+          type: ["string", "null"]
+        serviceType:
+          type: ["string", "null"]
+        onboardedOn:
+          type: ["string", "null"]
+        status:
+          type: string
+        hourlyRate:
+          type: ["number", "null"]
+        currency:
+          type: ["string", "null"]
+        ebayAccountsCount:
+          type: integer
+        totalSales:
+          type: ["number", "null"]
+        lastContact:
+          type: ["string", "null"]
+        notes:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+      required: [id, clientName, status, ebayAccountsCount, createdAt, updatedAt]
+
+    CreateClientBody:
+      type: object
+      properties:
+        clientName:
+          type: string
+        businessBrand:
+          type: ["string", "null"]
+        country:
+          type: ["string", "null"]
+        email:
+          type: ["string", "null"]
+        phone:
+          type: ["string", "null"]
+        serviceType:
+          type: ["string", "null"]
+        onboardedOn:
+          type: ["string", "null"]
+        status:
+          type: string
+        hourlyRate:
+          type: ["number", "null"]
+        currency:
+          type: ["string", "null"]
+        totalSales:
+          type: ["number", "null"]
+        lastContact:
+          type: ["string", "null"]
+        notes:
+          type: ["string", "null"]
+      required: [clientName, status]
+
+    UpdateClientBody:
+      type: object
+      properties:
+        clientName:
+          type: ["string", "null"]
+        businessBrand:
+          type: ["string", "null"]
+        country:
+          type: ["string", "null"]
+        email:
+          type: ["string", "null"]
+        phone:
+          type: ["string", "null"]
+        serviceType:
+          type: ["string", "null"]
+        onboardedOn:
+          type: ["string", "null"]
+        status:
+          type: ["string", "null"]
+        hourlyRate:
+          type: ["number", "null"]
+        currency:
+          type: ["string", "null"]
+        totalSales:
+          type: ["number", "null"]
+        lastContact:
+          type: ["string", "null"]
+        notes:
+          type: ["string", "null"]
+
+    EbayAccount:
+      type: object
+      properties:
+        id:
+          type: integer
+        clientId:
+          type: integer
+        clientName:
+          type: string
+        ebayUsername:
+          type: string
+        ebayEmail:
+          type: ["string", "null"]
+        ebayPassword:
+          type: ["string", "null"]
+        marketplace:
+          type: ["string", "null"]
+        accountType:
+          type: ["string", "null"]
+        accountHealth:
+          type: ["string", "null"]
+        feedbackScore:
+          type: ["integer", "null"]
+        topRated:
+          type: boolean
+        activeListings:
+          type: ["integer", "null"]
+        sellingLimit:
+          type: ["number", "null"]
+        mcRestriction:
+          type: boolean
+        lastLogin:
+          type: ["string", "null"]
+        lastPwdChange:
+          type: ["string", "null"]
+        pwdExpiresIn:
+          type: ["integer", "null"]
+        twoFaEnabled:
+          type: boolean
+        linkedBankId:
+          type: ["string", "null"]
+        linkedCardId:
+          type: ["string", "null"]
+        notes:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+      required: [id, clientId, clientName, ebayUsername, topRated, mcRestriction, twoFaEnabled, createdAt, updatedAt]
+
+    CreateEbayAccountBody:
+      type: object
+      properties:
+        clientId:
+          type: integer
+        ebayUsername:
+          type: string
+        ebayEmail:
+          type: ["string", "null"]
+        ebayPassword:
+          type: ["string", "null"]
+        marketplace:
+          type: ["string", "null"]
+        accountType:
+          type: ["string", "null"]
+        accountHealth:
+          type: ["string", "null"]
+        feedbackScore:
+          type: ["integer", "null"]
+        topRated:
+          type: boolean
+        activeListings:
+          type: ["integer", "null"]
+        sellingLimit:
+          type: ["number", "null"]
+        mcRestriction:
+          type: boolean
+        lastLogin:
+          type: ["string", "null"]
+        lastPwdChange:
+          type: ["string", "null"]
+        pwdExpiresIn:
+          type: ["integer", "null"]
+        twoFaEnabled:
+          type: boolean
+        linkedBankId:
+          type: ["string", "null"]
+        linkedCardId:
+          type: ["string", "null"]
+        notes:
+          type: ["string", "null"]
+      required: [clientId, ebayUsername, topRated, mcRestriction, twoFaEnabled]
+
+    UpdateEbayAccountBody:
+      type: object
+      properties:
+        clientId:
+          type: ["integer", "null"]
+        ebayUsername:
+          type: ["string", "null"]
+        ebayEmail:
+          type: ["string", "null"]
+        ebayPassword:
+          type: ["string", "null"]
+        marketplace:
+          type: ["string", "null"]
+        accountType:
+          type: ["string", "null"]
+        accountHealth:
+          type: ["string", "null"]
+        feedbackScore:
+          type: ["integer", "null"]
+        topRated:
+          type: ["boolean", "null"]
+        activeListings:
+          type: ["integer", "null"]
+        sellingLimit:
+          type: ["number", "null"]
+        mcRestriction:
+          type: ["boolean", "null"]
+        lastLogin:
+          type: ["string", "null"]
+        lastPwdChange:
+          type: ["string", "null"]
+        pwdExpiresIn:
+          type: ["integer", "null"]
+        twoFaEnabled:
+          type: ["boolean", "null"]
+        linkedBankId:
+          type: ["string", "null"]
+        linkedCardId:
+          type: ["string", "null"]
+        notes:
+          type: ["string", "null"]
+
+    WiseCard:
+      type: object
+      properties:
+        id:
+          type: integer
+        cardCode:
+          type: string
+        clientId:
+          type: integer
+        clientName:
+          type: string
+        provider:
+          type: ["string", "null"]
+        cardType:
+          type: ["string", "null"]
+        cardHolder:
+          type: ["string", "null"]
+        cardNumberMasked:
+          type: ["string", "null"]
+        expiryMonth:
+          type: ["integer", "null"]
+        expiryYear:
+          type: ["integer", "null"]
+        currency:
+          type: ["string", "null"]
+        wiseEmail:
+          type: ["string", "null"]
+        wisePassword:
+          type: ["string", "null"]
+        wise2fa:
+          type: boolean
+        linkedBankId:
+          type: ["string", "null"]
+        balance:
+          type: ["number", "null"]
+        daysToExpiry:
+          type: ["integer", "null"]
+        status:
+          type: ["string", "null"]
+        notes:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+      required: [id, cardCode, clientId, clientName, wise2fa, createdAt, updatedAt]
+
+    CreateWiseCardBody:
+      type: object
+      properties:
+        cardCode:
+          type: string
+        clientId:
+          type: integer
+        provider:
+          type: ["string", "null"]
+        cardType:
+          type: ["string", "null"]
+        cardHolder:
+          type: ["string", "null"]
+        cardNumberMasked:
+          type: ["string", "null"]
+        expiryMonth:
+          type: ["integer", "null"]
+        expiryYear:
+          type: ["integer", "null"]
+        currency:
+          type: ["string", "null"]
+        wiseEmail:
+          type: ["string", "null"]
+        wisePassword:
+          type: ["string", "null"]
+        wise2fa:
+          type: boolean
+        linkedBankId:
+          type: ["string", "null"]
+        balance:
+          type: ["number", "null"]
+        status:
+          type: ["string", "null"]
+        notes:
+          type: ["string", "null"]
+      required: [cardCode, clientId, wise2fa]
+
+    UpdateWiseCardBody:
+      type: object
+      properties:
+        cardCode:
+          type: ["string", "null"]
+        clientId:
+          type: ["integer", "null"]
+        provider:
+          type: ["string", "null"]
+        cardType:
+          type: ["string", "null"]
+        cardHolder:
+          type: ["string", "null"]
+        cardNumberMasked:
+          type: ["string", "null"]
+        expiryMonth:
+          type: ["integer", "null"]
+        expiryYear:
+          type: ["integer", "null"]
+        currency:
+          type: ["string", "null"]
+        wiseEmail:
+          type: ["string", "null"]
+        wisePassword:
+          type: ["string", "null"]
+        wise2fa:
+          type: ["boolean", "null"]
+        linkedBankId:
+          type: ["string", "null"]
+        balance:
+          type: ["number", "null"]
+        status:
+          type: ["string", "null"]
+        notes:
+          type: ["string", "null"]
+
+    BankAccount:
+      type: object
+      properties:
+        id:
+          type: integer
+        bankCode:
+          type: string
+        clientId:
+          type: integer
+        clientName:
+          type: string
+        bankName:
+          type: ["string", "null"]
+        accountHolder:
+          type: ["string", "null"]
+        accountNumber:
+          type: ["string", "null"]
+        routingCode:
+          type: ["string", "null"]
+        swiftBic:
+          type: ["string", "null"]
+        iban:
+          type: ["string", "null"]
+        currency:
+          type: ["string", "null"]
+        onlineBankingUrl:
+          type: ["string", "null"]
+        onlineUsername:
+          type: ["string", "null"]
+        onlinePassword:
+          type: ["string", "null"]
+        twoFaMethod:
+          type: ["string", "null"]
+        status:
+          type: ["string", "null"]
+        notes:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+      required: [id, bankCode, clientId, clientName, createdAt, updatedAt]
+
+    CreateBankAccountBody:
+      type: object
+      properties:
+        bankCode:
+          type: string
+        clientId:
+          type: integer
+        bankName:
+          type: ["string", "null"]
+        accountHolder:
+          type: ["string", "null"]
+        accountNumber:
+          type: ["string", "null"]
+        routingCode:
+          type: ["string", "null"]
+        swiftBic:
+          type: ["string", "null"]
+        iban:
+          type: ["string", "null"]
+        currency:
+          type: ["string", "null"]
+        onlineBankingUrl:
+          type: ["string", "null"]
+        onlineUsername:
+          type: ["string", "null"]
+        onlinePassword:
+          type: ["string", "null"]
+        twoFaMethod:
+          type: ["string", "null"]
+        status:
+          type: ["string", "null"]
+        notes:
+          type: ["string", "null"]
+      required: [bankCode, clientId]
+
+    UpdateBankAccountBody:
+      type: object
+      properties:
+        bankCode:
+          type: ["string", "null"]
+        clientId:
+          type: ["integer", "null"]
+        bankName:
+          type: ["string", "null"]
+        accountHolder:
+          type: ["string", "null"]
+        accountNumber:
+          type: ["string", "null"]
+        routingCode:
+          type: ["string", "null"]
+        swiftBic:
+          type: ["string", "null"]
+        iban:
+          type: ["string", "null"]
+        currency:
+          type: ["string", "null"]
+        onlineBankingUrl:
+          type: ["string", "null"]
+        onlineUsername:
+          type: ["string", "null"]
+        onlinePassword:
+          type: ["string", "null"]
+        twoFaMethod:
+          type: ["string", "null"]
+        status:
+          type: ["string", "null"]
+        notes:
+          type: ["string", "null"]
+
+    Invoice:
+      type: object
+      properties:
+        id:
+          type: integer
+        invoiceNumber:
+          type: string
+        clientId:
+          type: integer
+        clientName:
+          type: string
+        issueDate:
+          type: ["string", "null"]
+        dueDate:
+          type: ["string", "null"]
+        hours:
+          type: ["number", "null"]
+        rate:
+          type: ["number", "null"]
+        amount:
+          type: number
+        status:
+          type: string
+        paidOn:
+          type: ["string", "null"]
+        daysOverdue:
+          type: ["integer", "null"]
+        method:
+          type: ["string", "null"]
+        notes:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+      required: [id, invoiceNumber, clientId, clientName, amount, status, createdAt, updatedAt]
+
+    CreateInvoiceBody:
+      type: object
+      properties:
+        invoiceNumber:
+          type: string
+        clientId:
+          type: integer
+        issueDate:
+          type: ["string", "null"]
+        dueDate:
+          type: ["string", "null"]
+        hours:
+          type: ["number", "null"]
+        rate:
+          type: ["number", "null"]
+        amount:
+          type: number
+        status:
+          type: string
+        paidOn:
+          type: ["string", "null"]
+        method:
+          type: ["string", "null"]
+        notes:
+          type: ["string", "null"]
+      required: [invoiceNumber, clientId, amount, status]
+
+    UpdateInvoiceBody:
+      type: object
+      properties:
+        invoiceNumber:
+          type: ["string", "null"]
+        clientId:
+          type: ["integer", "null"]
+        issueDate:
+          type: ["string", "null"]
+        dueDate:
+          type: ["string", "null"]
+        hours:
+          type: ["number", "null"]
+        rate:
+          type: ["number", "null"]
+        amount:
+          type: ["number", "null"]
+        status:
+          type: ["string", "null"]
+        paidOn:
+          type: ["string", "null"]
+        method:
+          type: ["string", "null"]
+        notes:
+          type: ["string", "null"]
+
+    InvoicesSummary:
+      type: object
+      properties:
+        totalBilled:
+          type: number
+        totalPaid:
+          type: number
+        totalOverdue:
+          type: number
+        totalPending:
+          type: number
+        overdueCount:
+          type: integer
+      required: [totalBilled, totalPaid, totalOverdue, totalPending, overdueCount]
+
+    Violation:
+      type: object
+      properties:
+        id:
+          type: integer
+        clientId:
+          type: integer
+        clientName:
+          type: string
+        ebayUsername:
+          type: string
+        date:
+          type: ["string", "null"]
+        policyCode:
+          type: ["string", "null"]
+        severity:
+          type: ["string", "null"]
+        description:
+          type: ["string", "null"]
+        actionTaken:
+          type: ["string", "null"]
+        resolved:
+          type: boolean
+        resolvedOn:
+          type: ["string", "null"]
+        notes:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+      required: [id, clientId, clientName, ebayUsername, resolved, createdAt, updatedAt]
+
+    CreateViolationBody:
+      type: object
+      properties:
+        clientId:
+          type: integer
+        ebayUsername:
+          type: string
+        date:
+          type: ["string", "null"]
+        policyCode:
+          type: ["string", "null"]
+        severity:
+          type: ["string", "null"]
+        description:
+          type: ["string", "null"]
+        actionTaken:
+          type: ["string", "null"]
+        resolved:
+          type: boolean
+        resolvedOn:
+          type: ["string", "null"]
+        notes:
+          type: ["string", "null"]
+      required: [clientId, ebayUsername, resolved]
+
+    UpdateViolationBody:
+      type: object
+      properties:
+        clientId:
+          type: ["integer", "null"]
+        ebayUsername:
+          type: ["string", "null"]
+        date:
+          type: ["string", "null"]
+        policyCode:
+          type: ["string", "null"]
+        severity:
+          type: ["string", "null"]
+        description:
+          type: ["string", "null"]
+        actionTaken:
+          type: ["string", "null"]
+        resolved:
+          type: ["boolean", "null"]
+        resolvedOn:
+          type: ["string", "null"]
+        notes:
+          type: ["string", "null"]
+
+    Task:
+      type: object
+      properties:
+        id:
+          type: integer
+        clientId:
+          type: ["integer", "null"]
+        clientName:
+          type: ["string", "null"]
+        task:
+          type: string
+        priority:
+          type: ["string", "null"]
+        dueDate:
+          type: ["string", "null"]
+        daysLeft:
+          type: ["integer", "null"]
+        done:
+          type: boolean
+        status:
+          type: string
+        notes:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+      required: [id, task, done, status, createdAt, updatedAt]
+
+    CreateTaskBody:
+      type: object
+      properties:
+        clientId:
+          type: ["integer", "null"]
+        task:
+          type: string
+        priority:
+          type: ["string", "null"]
+        dueDate:
+          type: ["string", "null"]
+        done:
+          type: boolean
+        status:
+          type: string
+        notes:
+          type: ["string", "null"]
+      required: [task, done, status]
+
+    UpdateTaskBody:
+      type: object
+      properties:
+        clientId:
+          type: ["integer", "null"]
+        task:
+          type: ["string", "null"]
+        priority:
+          type: ["string", "null"]
+        dueDate:
+          type: ["string", "null"]
+        done:
+          type: ["boolean", "null"]
+        status:
+          type: ["string", "null"]
+        notes:
+          type: ["string", "null"]
+
+    Earning:
+      type: object
+      properties:
+        id:
+          type: integer
+        clientId:
+          type: integer
+        clientName:
+          type: string
+        year:
+          type: integer
+        month:
+          type: integer
+        amount:
+          type: number
+        currency:
+          type: ["string", "null"]
+        notes:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+      required: [id, clientId, clientName, year, month, amount, createdAt, updatedAt]
+
+    CreateEarningBody:
+      type: object
+      properties:
+        clientId:
+          type: integer
+        year:
+          type: integer
+        month:
+          type: integer
+        amount:
+          type: number
+        currency:
+          type: ["string", "null"]
+        notes:
+          type: ["string", "null"]
+      required: [clientId, year, month, amount]
+
+    UpdateEarningBody:
+      type: object
+      properties:
+        clientId:
+          type: ["integer", "null"]
+        year:
+          type: ["integer", "null"]
+        month:
+          type: ["integer", "null"]
+        amount:
+          type: ["number", "null"]
+        currency:
+          type: ["string", "null"]
+        notes:
+          type: ["string", "null"]
+
+    EarningsSummary:
+      type: object
+      properties:
+        byClient:
+          type: array
+          items:
+            type: object
+            properties:
+              clientId:
+                type: integer
+              clientName:
+                type: string
+              ytdTotal:
+                type: number
+              monthlyData:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    month:
+                      type: integer
+                    amount:
+                      type: number
+                  required: [month, amount]
+            required: [clientId, clientName, ytdTotal, monthlyData]
+        totalYtd:
+          type: number
+      required: [byClient, totalYtd]
+
+    Expense:
+      type: object
+      properties:
+        id:
+          type: integer
+        date:
+          type: ["string", "null"]
+        category:
+          type: ["string", "null"]
+        vendor:
+          type: ["string", "null"]
+        description:
+          type: ["string", "null"]
+        amount:
+          type: number
+        currency:
+          type: ["string", "null"]
+        recurring:
+          type: boolean
+        linkedClientId:
+          type: ["integer", "null"]
+        linkedClientName:
+          type: ["string", "null"]
+        notes:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+      required: [id, amount, recurring, createdAt, updatedAt]
+
+    CreateExpenseBody:
+      type: object
+      properties:
+        date:
+          type: ["string", "null"]
+        category:
+          type: ["string", "null"]
+        vendor:
+          type: ["string", "null"]
+        description:
+          type: ["string", "null"]
+        amount:
+          type: number
+        currency:
+          type: ["string", "null"]
+        recurring:
+          type: boolean
+        linkedClientId:
+          type: ["integer", "null"]
+        notes:
+          type: ["string", "null"]
+      required: [amount, recurring]
+
+    UpdateExpenseBody:
+      type: object
+      properties:
+        date:
+          type: ["string", "null"]
+        category:
+          type: ["string", "null"]
+        vendor:
+          type: ["string", "null"]
+        description:
+          type: ["string", "null"]
+        amount:
+          type: ["number", "null"]
+        currency:
+          type: ["string", "null"]
+        recurring:
+          type: ["boolean", "null"]
+        linkedClientId:
+          type: ["integer", "null"]
+        notes:
+          type: ["string", "null"]
+
+    RecoveryEntry:
+      type: object
+      properties:
+        id:
+          type: integer
+        clientId:
+          type: integer
+        clientName:
+          type: string
+        accountService:
+          type: string
+        recoveryEmail:
+          type: ["string", "null"]
+        recoveryPhone:
+          type: ["string", "null"]
+        securityQ1:
+          type: ["string", "null"]
+        answer1:
+          type: ["string", "null"]
+        securityQ2:
+          type: ["string", "null"]
+        answer2:
+          type: ["string", "null"]
+        twoFaMethod:
+          type: ["string", "null"]
+        backupCodes:
+          type: ["string", "null"]
+        totpSeed:
+          type: ["string", "null"]
+        notes:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+      required: [id, clientId, clientName, accountService, createdAt, updatedAt]
+
+    CreateRecoveryEntryBody:
+      type: object
+      properties:
+        clientId:
+          type: integer
+        accountService:
+          type: string
+        recoveryEmail:
+          type: ["string", "null"]
+        recoveryPhone:
+          type: ["string", "null"]
+        securityQ1:
+          type: ["string", "null"]
+        answer1:
+          type: ["string", "null"]
+        securityQ2:
+          type: ["string", "null"]
+        answer2:
+          type: ["string", "null"]
+        twoFaMethod:
+          type: ["string", "null"]
+        backupCodes:
+          type: ["string", "null"]
+        totpSeed:
+          type: ["string", "null"]
+        notes:
+          type: ["string", "null"]
+      required: [clientId, accountService]
+
+    UpdateRecoveryEntryBody:
+      type: object
+      properties:
+        clientId:
+          type: ["integer", "null"]
+        accountService:
+          type: ["string", "null"]
+        recoveryEmail:
+          type: ["string", "null"]
+        recoveryPhone:
+          type: ["string", "null"]
+        securityQ1:
+          type: ["string", "null"]
+        answer1:
+          type: ["string", "null"]
+        securityQ2:
+          type: ["string", "null"]
+        answer2:
+          type: ["string", "null"]
+        twoFaMethod:
+          type: ["string", "null"]
+        backupCodes:
+          type: ["string", "null"]
+        totpSeed:
+          type: ["string", "null"]
+        notes:
+          type: ["string", "null"]
+
+    DailyLogin:
+      type: object
+      properties:
+        id:
+          type: integer
+        clientId:
+          type: integer
+        clientName:
+          type: string
+        ebayUsername:
+          type: string
+        year:
+          type: integer
+        month:
+          type: integer
+        targetPerWeek:
+          type: ["integer", "null"]
+        loginDays:
+          type: array
+          items:
+            type: integer
+        doneThisMonth:
+          type: integer
+        adherencePct:
+          type: number
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+      required: [id, clientId, clientName, ebayUsername, year, month, loginDays, doneThisMonth, adherencePct, createdAt, updatedAt]
+
+    CreateDailyLoginBody:
+      type: object
+      properties:
+        clientId:
+          type: integer
+        ebayUsername:
+          type: string
+        year:
+          type: integer
+        month:
+          type: integer
+        targetPerWeek:
+          type: ["integer", "null"]
+        loginDays:
+          type: array
+          items:
+            type: integer
+      required: [clientId, ebayUsername, year, month, loginDays]
+
+    UpdateDailyLoginBody:
+      type: object
+      properties:
+        targetPerWeek:
+          type: ["integer", "null"]
+        loginDays:
+          type: array
+          items:
+            type: integer

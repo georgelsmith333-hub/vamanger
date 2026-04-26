@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/"
+title = "VA eBay Client Manager"
+version = "1.0.0"
+id = "artifacts/va-dashboard"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 21975
+
+[services.development]
+run = "pnpm --filter @workspace/va-dashboard run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/va-dashboard", "run", "build" ]
+publicDir = "artifacts/va-dashboard/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "21975"
+BASE_PATH = "/"
