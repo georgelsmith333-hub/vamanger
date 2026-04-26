@@ -83,4 +83,30 @@ router.get("/dashboard/recent-activity", async (_req, res): Promise<void> => {
   res.json(GetDashboardRecentActivityResponse.parse(result));
 });
 
+router.get("/dashboard/chart", async (_req, res): Promise<void> => {
+  const [earnings, expenses] = await Promise.all([
+    db.select().from(earningsTable),
+    db.select().from(expensesTable),
+  ]);
+
+  const months: { label: string; year: number; month: number }[] = [];
+  const now = new Date();
+  for (let i = 11; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    months.push({ label: d.toLocaleString('en-US', { month: 'short', year: 'numeric' }), year: d.getFullYear(), month: d.getMonth() + 1 });
+  }
+
+  const data = months.map(({ label, year, month }) => {
+    const earn = earnings.filter(e => e.year === year && e.month === month).reduce((s, e) => s + Number(e.amount), 0);
+    const exp = expenses.filter(e => {
+      if (!e.date) return false;
+      const d = new Date(e.date);
+      return d.getFullYear() === year && d.getMonth() + 1 === month;
+    }).reduce((s, e) => s + Number(e.amount), 0);
+    return { label, earnings: earn, expenses: exp, net: earn - exp };
+  });
+
+  res.json(data);
+});
+
 export default router;

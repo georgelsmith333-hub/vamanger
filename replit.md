@@ -2,7 +2,7 @@
 
 ## Overview
 
-pnpm workspace monorepo using TypeScript. A premium eBay VA Client Manager dashboard web app with full CRUD for all entities, live KPIs, admin panel, and audit logging.
+pnpm workspace monorepo using TypeScript. A premium eBay VA Client Manager dashboard web app with full CRUD for all entities, live KPIs, revenue trend chart, CSV export on every page, Google Sheets live sync, admin panel, audit logging, backup/restore, and deployment support for both Render and Cloudflare.
 
 ## Stack
 

@@ -13,6 +13,7 @@ import expensesRouter from "./expenses";
 import recoveryRouter from "./recovery";
 import dailyLoginsRouter from "./daily-logins";
 import adminRouter from "./admin";
+import sheetsRouter from "./sheets";
 
 const router: IRouter = Router();
 
@@ -30,5 +31,6 @@ router.use(earningsRouter);
 router.use(expensesRouter);
 router.use(recoveryRouter);
 router.use(dailyLoginsRouter);
+router.use(sheetsRouter);
 
 export default router;

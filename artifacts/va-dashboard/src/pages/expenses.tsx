@@ -6,7 +6,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Plus, Search, Edit2, Trash2, RefreshCw } from 'lucide-react';
+import { Plus, Search, Edit2, Trash2, RefreshCw, Download } from 'lucide-react';
+import { exportToCsv } from '@/lib/export-csv';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
@@ -171,9 +172,14 @@ export default function Expenses() {
         <div className="rounded-lg border bg-card p-4"><p className="text-sm text-muted-foreground">Recurring Monthly</p><p className="text-2xl font-bold text-amber-500">${recurring.toFixed(2)}</p><div className="flex items-center gap-1 mt-1"><RefreshCw className="w-3 h-3 text-muted-foreground" /><p className="text-xs text-muted-foreground">per month</p></div></div>
       </div>
 
-      <div className="flex items-center gap-2 max-w-sm">
-        <Search className="w-4 h-4 text-muted-foreground" />
-        <Input placeholder="Search expenses..." value={search} onChange={e => setSearch(e.target.value)} className="h-9" />
+      <div className="flex items-center justify-between gap-4">
+        <div className="flex items-center gap-2 max-w-sm flex-1">
+          <Search className="w-4 h-4 text-muted-foreground" />
+          <Input placeholder="Search expenses..." value={search} onChange={e => setSearch(e.target.value)} className="h-9" />
+        </div>
+        <Button variant="outline" size="sm" onClick={() => exportToCsv(filtered as Record<string, unknown>[], 'expenses')}>
+          <Download className="w-4 h-4 mr-2" />Export CSV
+        </Button>
       </div>
 
       <div className="rounded-md border">

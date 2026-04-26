@@ -1,9 +1,16 @@
 import React from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { useGetDashboardSummary, getGetDashboardSummaryQueryKey, useGetDashboardRecentActivity, getGetDashboardRecentActivityQueryKey } from '@workspace/api-client-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Users, ShoppingCart, FileText, AlertTriangle, CheckSquare, CreditCard, TrendingUp, Receipt, Activity, Shield, ArrowRight } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useLocation } from 'wouter';
+import {
+  AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip,
+  ResponsiveContainer, Legend,
+} from 'recharts';
+
+const BASE = import.meta.env.BASE_URL.replace(/\/$/, '');
 
 function KpiCard({ title, value, subtitle, icon: Icon, alert, href }: {
   title: string;
@@ -67,12 +74,41 @@ function AlertItem({ icon: Icon, title, description, href, color = 'destructive'
   );
 }
 
+type ChartPoint = { label: string; earnings: number; expenses: number; net: number };
+
+const CustomTooltip = ({ active, payload, label }: { active?: boolean; payload?: { color: string; name: string; value: number }[]; label?: string }) => {
+  if (active && payload && payload.length) {
+    return (
+      <div className="rounded-lg border border-zinc-700 bg-zinc-900 p-3 shadow-xl text-xs space-y-1">
+        <p className="font-semibold text-zinc-200 mb-2">{label}</p>
+        {payload.map((p) => (
+          <div key={p.name} className="flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full inline-block" style={{ background: p.color }} />
+            <span className="text-zinc-400 capitalize">{p.name}:</span>
+            <span className="font-medium text-zinc-100">${p.value.toLocaleString()}</span>
+          </div>
+        ))}
+      </div>
+    );
+  }
+  return null;
+};
+
 export default function Dashboard() {
   const { data: summary, isLoading: isLoadingSummary } = useGetDashboardSummary({
     query: { queryKey: getGetDashboardSummaryQueryKey() }
   });
   const { data: recentActivity, isLoading: isLoadingActivity } = useGetDashboardRecentActivity({
     query: { queryKey: getGetDashboardRecentActivityQueryKey() }
+  });
+  const { data: chartData, isLoading: isLoadingChart } = useQuery<ChartPoint[]>({
+    queryKey: ['dashboard-chart'],
+    queryFn: async () => {
+      const r = await fetch(`${BASE}/api/dashboard/chart`);
+      if (!r.ok) throw new Error('Failed to fetch chart data');
+      return r.json() as Promise<ChartPoint[]>;
+    },
+    staleTime: 60000,
   });
 
   const activityIcons: Record<string, string> = {
@@ -83,6 +119,8 @@ export default function Dashboard() {
     undo: '↩️',
     bulk_delete: '🗑️',
   };
+
+  const hasChartData = chartData && chartData.some(d => d.earnings > 0 || d.expenses > 0);
 
   return (
     <div className="space-y-6">
@@ -115,6 +153,51 @@ export default function Dashboard() {
             <KpiCard title="Expiring Cards" value={summary.expiringCardsCount} icon={CreditCard} alert={summary.expiringCardsCount > 0} href="/wise-cards" />
             <KpiCard title="Expenses (Month)" value={`$${summary.totalExpensesThisMonth.toLocaleString()}`} icon={Receipt} href="/expenses" />
           </div>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Revenue & Profit Trend</CardTitle>
+              <CardDescription>Last 12 months — earnings, expenses, and net profit</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {isLoadingChart ? (
+                <Skeleton className="h-64 w-full" />
+              ) : !hasChartData ? (
+                <div className="flex flex-col items-center justify-center h-48 text-muted-foreground">
+                  <TrendingUp className="w-8 h-8 mb-2 opacity-40" />
+                  <p className="text-sm">No earnings or expenses recorded yet.</p>
+                  <p className="text-xs mt-1">Add earnings and expenses to see your trend chart.</p>
+                </div>
+              ) : (
+                <ResponsiveContainer width="100%" height={260}>
+                  <AreaChart data={chartData} margin={{ top: 4, right: 8, bottom: 0, left: 0 }}>
+                    <defs>
+                      <linearGradient id="gradEarnings" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#22c55e" stopOpacity={0.3} />
+                        <stop offset="95%" stopColor="#22c55e" stopOpacity={0} />
+                      </linearGradient>
+                      <linearGradient id="gradExpenses" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#ef4444" stopOpacity={0.2} />
+                        <stop offset="95%" stopColor="#ef4444" stopOpacity={0} />
+                      </linearGradient>
+                      <linearGradient id="gradNet" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.2} />
+                        <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#27272a" />
+                    <XAxis dataKey="label" tick={{ fontSize: 11, fill: '#71717a' }} axisLine={false} tickLine={false} />
+                    <YAxis tickFormatter={(v: number) => `$${v >= 1000 ? `${(v / 1000).toFixed(0)}k` : v}`} tick={{ fontSize: 11, fill: '#71717a' }} axisLine={false} tickLine={false} width={52} />
+                    <Tooltip content={<CustomTooltip />} />
+                    <Legend wrapperStyle={{ fontSize: 12, paddingTop: 8 }} />
+                    <Area type="monotone" dataKey="earnings" name="Earnings" stroke="#22c55e" strokeWidth={2} fill="url(#gradEarnings)" dot={false} />
+                    <Area type="monotone" dataKey="expenses" name="Expenses" stroke="#ef4444" strokeWidth={2} fill="url(#gradExpenses)" dot={false} />
+                    <Area type="monotone" dataKey="net" name="Net" stroke="#3b82f6" strokeWidth={2} fill="url(#gradNet)" dot={false} strokeDasharray="4 2" />
+                  </AreaChart>
+                </ResponsiveContainer>
+              )}
+            </CardContent>
+          </Card>
 
           <div className="grid gap-4 md:grid-cols-2">
             <Card>
