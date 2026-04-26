@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Plus, CalendarDays, CheckCircle2, Circle } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
@@ -52,6 +53,7 @@ function CalendarGrid({ loginDays, year, month, onToggle }: { loginDays: number[
 
 export default function DailyLogin() {
   const queryClient = useQueryClient();
+  const { toast } = useToast();
   const [isAddOpen, setIsAddOpen] = useState(false);
   const now = new Date();
 
@@ -70,7 +72,13 @@ export default function DailyLogin() {
 
   const onSubmit = (data: z.infer<typeof schema>) => {
     createLogin.mutate({ data }, {
-      onSuccess: () => { queryClient.invalidateQueries({ queryKey: getGetDailyLoginsQueryKey() }); setIsAddOpen(false); form.reset(); },
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: getGetDailyLoginsQueryKey() });
+        setIsAddOpen(false);
+        form.reset();
+        toast({ title: 'Tracker created', description: `Login tracker for ${data.ebayUsername} added.` });
+      },
+      onError: () => toast({ title: 'Error', description: 'Failed to create tracker.', variant: 'destructive' }),
     });
   };
 
@@ -82,6 +90,7 @@ export default function DailyLogin() {
       onSuccess: () => queryClient.invalidateQueries({ queryKey: getGetDailyLoginsQueryKey() }),
     });
   };
+
 
   return (
     <div className="space-y-6">

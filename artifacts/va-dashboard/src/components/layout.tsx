@@ -3,7 +3,7 @@ import { useLocation, Link } from 'wouter';
 import {
   LayoutDashboard, Users, ShoppingCart, CreditCard, Landmark,
   FileText, AlertTriangle, CheckSquare, TrendingUp, Receipt, Shield,
-  CalendarDays, Menu, Bell, Search, Settings, ChevronRight, X
+  CalendarDays, Menu, Bell, Search, Settings, ChevronRight, X, BookOpen
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -23,6 +23,7 @@ const navItems = [
   { href: '/expenses', label: 'Expenses', icon: Receipt },
   { href: '/recovery', label: 'Recovery & 2FA', icon: Shield },
   { href: '/daily-login', label: 'Daily Logins', icon: CalendarDays },
+  { href: '/manual', label: 'User Manual', icon: BookOpen },
 ];
 
 export function Layout({ children }: { children: React.ReactNode }) {

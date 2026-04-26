@@ -1,23 +1,94 @@
 import React from 'react';
 import { useGetDashboardSummary, getGetDashboardSummaryQueryKey, useGetDashboardRecentActivity, getGetDashboardRecentActivityQueryKey } from '@workspace/api-client-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Users, ShoppingCart, FileText, AlertTriangle, CheckSquare, CreditCard, TrendingUp, Receipt, Activity, Shield } from 'lucide-react';
+import { Users, ShoppingCart, FileText, AlertTriangle, CheckSquare, CreditCard, TrendingUp, Receipt, Activity, Shield, ArrowRight } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useLocation } from 'wouter';
+
+function KpiCard({ title, value, subtitle, icon: Icon, alert, href }: {
+  title: string;
+  value: string | number;
+  subtitle?: string;
+  icon: React.ElementType;
+  alert?: boolean;
+  href?: string;
+}) {
+  const [, navigate] = useLocation();
+  return (
+    <Card
+      className={`relative overflow-hidden transition-all duration-200 ${alert ? 'border-destructive/50' : ''} ${href ? 'cursor-pointer hover:scale-[1.02] hover:shadow-lg hover:border-primary/40 group' : ''}`}
+      onClick={href ? () => navigate(href) : undefined}
+      role={href ? 'button' : undefined}
+      tabIndex={href ? 0 : undefined}
+      onKeyDown={href ? (e) => { if (e.key === 'Enter') navigate(href); } : undefined}
+    >
+      {alert && <div className="absolute top-0 right-0 w-2 h-2 m-2 rounded-full bg-destructive animate-pulse" />}
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+        <CardTitle className="text-sm font-medium text-muted-foreground">{title}</CardTitle>
+        <div className="flex items-center gap-1">
+          <Icon className={`h-4 w-4 ${alert ? 'text-destructive' : 'text-muted-foreground'}`} />
+          {href && <ArrowRight className="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />}
+        </div>
+      </CardHeader>
+      <CardContent>
+        <div className={`text-2xl font-bold ${alert ? 'text-destructive' : ''}`}>{value}</div>
+        {subtitle && <p className="text-xs text-muted-foreground mt-1">{subtitle}</p>}
+      </CardContent>
+    </Card>
+  );
+}
+
+function AlertItem({ icon: Icon, title, description, href, color = 'destructive' }: {
+  icon: React.ElementType;
+  title: string;
+  description: string;
+  href: string;
+  color?: 'destructive' | 'amber';
+}) {
+  const [, navigate] = useLocation();
+  const cls = color === 'amber'
+    ? 'border-amber-500/50 bg-amber-500/10 text-amber-500 hover:bg-amber-500/20'
+    : 'border-destructive/50 bg-destructive/10 text-destructive hover:bg-destructive/20';
+  return (
+    <div
+      className={`flex items-center p-3 border rounded-lg cursor-pointer transition-colors ${cls}`}
+      onClick={() => navigate(href)}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => { if (e.key === 'Enter') navigate(href); }}
+    >
+      <Icon className="w-5 h-5 mr-3 flex-shrink-0" />
+      <div className="flex-1">
+        <h4 className="text-sm font-medium">{title}</h4>
+        <p className="text-xs opacity-90">{description}</p>
+      </div>
+      <ArrowRight className="w-4 h-4 opacity-60 ml-2" />
+    </div>
+  );
+}
 
 export default function Dashboard() {
   const { data: summary, isLoading: isLoadingSummary } = useGetDashboardSummary({
     query: { queryKey: getGetDashboardSummaryQueryKey() }
   });
-
   const { data: recentActivity, isLoading: isLoadingActivity } = useGetDashboardRecentActivity({
     query: { queryKey: getGetDashboardRecentActivityQueryKey() }
   });
+
+  const activityIcons: Record<string, string> = {
+    client_created: '👤',
+    client_deleted: '🗑️',
+    invoice_created: '📄',
+    invoice_paid: '✅',
+    undo: '↩️',
+    bulk_delete: '🗑️',
+  };
 
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-2">
         <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
-        <p className="text-muted-foreground">Overview of all client accounts and critical alerts.</p>
+        <p className="text-muted-foreground">Click any card to navigate. Real-time overview of all client accounts.</p>
       </div>
 
       {isLoadingSummary || !summary ? (
@@ -28,28 +99,25 @@ export default function Dashboard() {
                 <Skeleton className="h-4 w-24" />
                 <Skeleton className="h-4 w-4 rounded-full" />
               </CardHeader>
-              <CardContent>
-                <Skeleton className="h-8 w-16 mb-1" />
-              </CardContent>
+              <CardContent><Skeleton className="h-8 w-16 mb-1" /></CardContent>
             </Card>
           ))}
         </div>
       ) : (
         <>
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            <KpiCard title="Active Clients" value={summary.activeClients} subtitle={`Total: ${summary.totalClients}`} icon={Users} />
-            <KpiCard title="eBay Accounts" value={summary.totalEbayAccounts} subtitle={`${summary.accountsWithIssues} with issues`} icon={ShoppingCart} alert={summary.accountsWithIssues > 0} />
-            <KpiCard title="Open Violations" value={summary.openViolationsCount} icon={AlertTriangle} alert={summary.openViolationsCount > 0} />
-            <KpiCard title="Pending Tasks" value={summary.pendingTasksCount} subtitle={`${summary.overdueTasksCount} overdue`} icon={CheckSquare} alert={summary.overdueTasksCount > 0} />
-            
-            <KpiCard title="Net Profit (Month)" value={`$${summary.netProfitThisMonth.toLocaleString()}`} icon={TrendingUp} />
-            <KpiCard title="Overdue Invoices" value={summary.overdueInvoicesCount} subtitle={`$${summary.overdueInvoicesAmount.toLocaleString()}`} icon={FileText} alert={summary.overdueInvoicesCount > 0} />
-            <KpiCard title="Expiring Cards" value={summary.expiringCardsCount} icon={CreditCard} alert={summary.expiringCardsCount > 0} />
-            <KpiCard title="Expenses (Month)" value={`$${summary.totalExpensesThisMonth.toLocaleString()}`} icon={Receipt} />
+            <KpiCard title="Active Clients" value={summary.activeClients} subtitle={`Total: ${summary.totalClients}`} icon={Users} href="/clients" />
+            <KpiCard title="eBay Accounts" value={summary.totalEbayAccounts} subtitle={`${summary.accountsWithIssues} with issues`} icon={ShoppingCart} alert={summary.accountsWithIssues > 0} href="/ebay-accounts" />
+            <KpiCard title="Open Violations" value={summary.openViolationsCount} icon={AlertTriangle} alert={summary.openViolationsCount > 0} href="/violations" />
+            <KpiCard title="Pending Tasks" value={summary.pendingTasksCount} subtitle={`${summary.overdueTasksCount} overdue`} icon={CheckSquare} alert={summary.overdueTasksCount > 0} href="/tasks" />
+            <KpiCard title="Net Profit (Month)" value={`$${summary.netProfitThisMonth.toLocaleString()}`} icon={TrendingUp} href="/earnings" />
+            <KpiCard title="Overdue Invoices" value={summary.overdueInvoicesCount} subtitle={`$${summary.overdueInvoicesAmount.toLocaleString()}`} icon={FileText} alert={summary.overdueInvoicesCount > 0} href="/invoices" />
+            <KpiCard title="Expiring Cards" value={summary.expiringCardsCount} icon={CreditCard} alert={summary.expiringCardsCount > 0} href="/wise-cards" />
+            <KpiCard title="Expenses (Month)" value={`$${summary.totalExpensesThisMonth.toLocaleString()}`} icon={Receipt} href="/expenses" />
           </div>
 
           <div className="grid gap-4 md:grid-cols-2">
-            <Card className="col-span-1">
+            <Card>
               <CardHeader>
                 <CardTitle>Recent Activity</CardTitle>
                 <CardDescription>Latest actions across all clients</CardDescription>
@@ -68,22 +136,20 @@ export default function Dashboard() {
                     ))}
                   </div>
                 ) : recentActivity.length === 0 ? (
-                  <div className="text-center py-8 text-muted-foreground">No recent activity.</div>
+                  <div className="text-center py-8 text-muted-foreground">No recent activity yet. Add clients, create invoices, or log tasks to see activity here.</div>
                 ) : (
-                  <div className="space-y-4">
+                  <div className="space-y-3">
                     {recentActivity.map((activity) => (
-                      <div key={activity.id} className="flex items-start gap-4">
-                        <div className="p-2 rounded-full bg-secondary text-secondary-foreground">
-                          <Activity className="w-4 h-4" />
+                      <div key={activity.id} className="flex items-start gap-3 p-2 rounded-lg hover:bg-muted/50 transition-colors">
+                        <div className="p-2 rounded-full bg-secondary text-secondary-foreground text-sm flex-shrink-0">
+                          {activityIcons[activity.type ?? ''] ?? <Activity className="w-4 h-4" />}
                         </div>
-                        <div className="flex-1 space-y-1">
-                          <p className="text-sm font-medium leading-none">
-                            {activity.description}
-                          </p>
+                        <div className="flex-1 space-y-0.5">
+                          <p className="text-sm font-medium leading-tight">{activity.description}</p>
                           <p className="text-xs text-muted-foreground">
                             {activity.clientName && <span className="font-semibold text-primary">{activity.clientName}</span>}
-                            {activity.clientName && " • "}
-                            {new Date(activity.createdAt).toLocaleDateString()}
+                            {activity.clientName && ' • '}
+                            {new Date(activity.createdAt).toLocaleString()}
                           </p>
                         </div>
                       </div>
@@ -93,83 +159,41 @@ export default function Dashboard() {
               </CardContent>
             </Card>
 
-            <Card className="col-span-1">
+            <Card>
               <CardHeader>
                 <CardTitle>Alerts Panel</CardTitle>
-                <CardDescription>Requires immediate attention</CardDescription>
+                <CardDescription>Click to navigate — requires immediate attention</CardDescription>
               </CardHeader>
               <CardContent>
-                 <div className="space-y-4">
-                   {summary.openViolationsCount > 0 && (
-                     <div className="flex items-center p-3 border border-destructive/50 bg-destructive/10 rounded-lg text-destructive">
-                       <AlertTriangle className="w-5 h-5 mr-3" />
-                       <div className="flex-1">
-                         <h4 className="text-sm font-medium">Policy Violations</h4>
-                         <p className="text-xs opacity-90">{summary.openViolationsCount} unresolved policy violations</p>
-                       </div>
-                     </div>
-                   )}
-                   {summary.overdueInvoicesCount > 0 && (
-                     <div className="flex items-center p-3 border border-destructive/50 bg-destructive/10 rounded-lg text-destructive">
-                       <FileText className="w-5 h-5 mr-3" />
-                       <div className="flex-1">
-                         <h4 className="text-sm font-medium">Overdue Invoices</h4>
-                         <p className="text-xs opacity-90">{summary.overdueInvoicesCount} invoices overdue totaling ${summary.overdueInvoicesAmount.toLocaleString()}</p>
-                       </div>
-                     </div>
-                   )}
-                   {summary.overdueTasksCount > 0 && (
-                     <div className="flex items-center p-3 border border-destructive/50 bg-destructive/10 rounded-lg text-destructive">
-                       <CheckSquare className="w-5 h-5 mr-3" />
-                       <div className="flex-1">
-                         <h4 className="text-sm font-medium">Overdue Tasks</h4>
-                         <p className="text-xs opacity-90">{summary.overdueTasksCount} tasks past due date</p>
-                       </div>
-                     </div>
-                   )}
-                   {summary.expiringCardsCount > 0 && (
-                     <div className="flex items-center p-3 border border-amber-500/50 bg-amber-500/10 rounded-lg text-amber-500">
-                       <CreditCard className="w-5 h-5 mr-3" />
-                       <div className="flex-1">
-                         <h4 className="text-sm font-medium">Expiring Cards</h4>
-                         <p className="text-xs opacity-90">{summary.expiringCardsCount} cards expiring soon</p>
-                       </div>
-                     </div>
-                   )}
-                   {summary.openViolationsCount === 0 && summary.overdueInvoicesCount === 0 && summary.overdueTasksCount === 0 && summary.expiringCardsCount === 0 && (
-                     <div className="text-center py-8 text-muted-foreground flex flex-col items-center">
-                       <Shield className="w-8 h-8 mb-2 opacity-50" />
-                       <p>All clear. No urgent alerts.</p>
-                     </div>
-                   )}
-                 </div>
+                <div className="space-y-3">
+                  {summary.openViolationsCount > 0 && (
+                    <AlertItem icon={AlertTriangle} title="Policy Violations" description={`${summary.openViolationsCount} unresolved eBay policy violations`} href="/violations" />
+                  )}
+                  {summary.overdueInvoicesCount > 0 && (
+                    <AlertItem icon={FileText} title="Overdue Invoices" description={`${summary.overdueInvoicesCount} invoices overdue — $${summary.overdueInvoicesAmount.toLocaleString()} outstanding`} href="/invoices" />
+                  )}
+                  {summary.overdueTasksCount > 0 && (
+                    <AlertItem icon={CheckSquare} title="Overdue Tasks" description={`${summary.overdueTasksCount} tasks past their due date`} href="/tasks" />
+                  )}
+                  {summary.expiringCardsCount > 0 && (
+                    <AlertItem icon={CreditCard} title="Expiring Cards" description={`${summary.expiringCardsCount} Wise/payment cards expiring soon`} href="/wise-cards" color="amber" />
+                  )}
+                  {summary.accountsWithIssues > 0 && (
+                    <AlertItem icon={ShoppingCart} title="eBay Account Issues" description={`${summary.accountsWithIssues} accounts need attention`} href="/ebay-accounts" />
+                  )}
+                  {summary.openViolationsCount === 0 && summary.overdueInvoicesCount === 0 && summary.overdueTasksCount === 0 && summary.expiringCardsCount === 0 && summary.accountsWithIssues === 0 && (
+                    <div className="text-center py-8 text-muted-foreground flex flex-col items-center">
+                      <Shield className="w-8 h-8 mb-2 opacity-50" />
+                      <p className="font-medium">All clear!</p>
+                      <p className="text-xs mt-1">No urgent alerts. Everything looks good.</p>
+                    </div>
+                  )}
+                </div>
               </CardContent>
             </Card>
           </div>
         </>
       )}
     </div>
-  );
-}
-
-function KpiCard({ title, value, subtitle, icon: Icon, alert }: { title: string; value: string | number; subtitle?: string; icon: React.ElementType; alert?: boolean }) {
-  return (
-    <Card className={`relative overflow-hidden ${alert ? 'border-destructive/50' : ''}`}>
-      {alert && <div className="absolute top-0 right-0 w-2 h-2 m-2 rounded-full bg-destructive" />}
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="text-sm font-medium text-muted-foreground">
-          {title}
-        </CardTitle>
-        <Icon className={`h-4 w-4 ${alert ? 'text-destructive' : 'text-muted-foreground'}`} />
-      </CardHeader>
-      <CardContent>
-        <div className="text-2xl font-bold">{value}</div>
-        {subtitle && (
-          <p className="text-xs text-muted-foreground mt-1">
-            {subtitle}
-          </p>
-        )}
-      </CardContent>
-    </Card>
   );
 }
