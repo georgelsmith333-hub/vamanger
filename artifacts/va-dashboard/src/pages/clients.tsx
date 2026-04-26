@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useToast } from '@/hooks/use-toast';
 import * as z from 'zod';
 
 const clientSchema = z.object({
@@ -24,6 +25,7 @@ const clientSchema = z.object({
 
 export default function Clients() {
   const queryClient = useQueryClient();
+  const { toast } = useToast();
   const [search, setSearch] = useState('');
   const [isAddOpen, setIsAddOpen] = useState(false);
   
@@ -50,25 +52,30 @@ export default function Clients() {
     createClient.mutate(
       { data },
       {
-        onSuccess: () => {
+        onSuccess: (data) => {
           queryClient.invalidateQueries({ queryKey: getGetClientsQueryKey() });
           setIsAddOpen(false);
           form.reset();
+          toast({ title: "Client Added", description: `${data.clientName} has been added successfully.` });
+        },
+        onError: (err: Error) => {
+          toast({ title: "Error", description: err.message, variant: "destructive" });
         },
       }
     );
   };
 
-  const handleDelete = (id: number) => {
-    if (confirm('Are you sure you want to delete this client?')) {
-      deleteClient.mutate(
-        { id },
-        {
-          onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: getGetClientsQueryKey() });
-          },
-        }
-      );
+  const handleDelete = (id: number, name: string) => {
+    if (confirm(`Delete client "${name}"? This cannot be undone from the main app.`)) {
+      deleteClient.mutate({ id }, {
+        onSuccess: () => {
+          queryClient.invalidateQueries({ queryKey: getGetClientsQueryKey() });
+          toast({ title: "Client Deleted", description: `${name} has been removed.` });
+        },
+        onError: (err: Error) => {
+          toast({ title: "Delete Failed", description: err.message, variant: "destructive" });
+        },
+      });
     }
   };
 
@@ -228,7 +235,7 @@ export default function Clients() {
                       <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground">
                         <Edit2 className="h-4 w-4" />
                       </Button>
-                      <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10" onClick={() => handleDelete(client.id)} data-testid={`button-delete-client-${client.id}`}>
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10" onClick={() => handleDelete(client.id, client.clientName)} data-testid={`button-delete-client-${client.id}`}>
                         <Trash2 className="h-4 w-4" />
                       </Button>
                     </div>

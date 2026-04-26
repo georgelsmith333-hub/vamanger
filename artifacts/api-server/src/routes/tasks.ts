@@ -10,6 +10,7 @@ import {
   UpdateTaskResponse,
 } from "@workspace/api-zod";
 import { serializeDates } from "../lib/serialize";
+import { logAudit } from "../lib/audit";
 
 const router = Router();
 
@@ -42,6 +43,14 @@ router.post("/tasks", async (req, res): Promise<void> => {
   }
   const [task] = await db.insert(tasksTable).values(parsed.data).returning();
   const clients = await db.select({ id: clientsTable.id, clientName: clientsTable.clientName }).from(clientsTable);
+  await logAudit({
+    action: "CREATE",
+    tableName: "tasks",
+    recordId: task.id,
+    description: `Task created: ${task.task}`,
+    previousData: null,
+    newData: { ...task } as Record<string, unknown>,
+  });
   res.status(201).json(enrichTask(task, clients));
 });
 
@@ -56,6 +65,7 @@ router.patch("/tasks/:id", async (req, res): Promise<void> => {
     res.status(400).json({ error: parsed.error.message });
     return;
   }
+  const [before] = await db.select().from(tasksTable).where(eq(tasksTable.id, params.data.id));
   const updateData: Record<string, unknown> = {};
   for (const [k, v] of Object.entries(parsed.data)) {
     if (v !== undefined) updateData[k] = v;
@@ -65,6 +75,14 @@ router.patch("/tasks/:id", async (req, res): Promise<void> => {
     res.status(404).json({ error: "Task not found" });
     return;
   }
+  await logAudit({
+    action: "UPDATE",
+    tableName: "tasks",
+    recordId: task.id,
+    description: `Task updated: ${task.task} (status: ${task.status})`,
+    previousData: before ? ({ ...before } as Record<string, unknown>) : null,
+    newData: { ...task } as Record<string, unknown>,
+  });
   const clients = await db.select({ id: clientsTable.id, clientName: clientsTable.clientName }).from(clientsTable);
   res.json(UpdateTaskResponse.parse(enrichTask(task, clients)));
 });
@@ -75,7 +93,18 @@ router.delete("/tasks/:id", async (req, res): Promise<void> => {
     res.status(400).json({ error: params.error.message });
     return;
   }
+  const [before] = await db.select().from(tasksTable).where(eq(tasksTable.id, params.data.id));
   await db.delete(tasksTable).where(eq(tasksTable.id, params.data.id));
+  if (before) {
+    await logAudit({
+      action: "DELETE",
+      tableName: "tasks",
+      recordId: params.data.id,
+      description: `Task deleted: ${before.task}`,
+      previousData: { ...before } as Record<string, unknown>,
+      newData: null,
+    });
+  }
   res.sendStatus(204);
 });
 

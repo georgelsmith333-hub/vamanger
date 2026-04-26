@@ -12,11 +12,13 @@ import earningsRouter from "./earnings";
 import expensesRouter from "./expenses";
 import recoveryRouter from "./recovery";
 import dailyLoginsRouter from "./daily-logins";
+import adminRouter from "./admin";
 
 const router: IRouter = Router();
 
 router.use(healthRouter);
 router.use(dashboardRouter);
+router.use(adminRouter);
 router.use(clientsRouter);
 router.use(ebayAccountsRouter);
 router.use(wiseCardsRouter);

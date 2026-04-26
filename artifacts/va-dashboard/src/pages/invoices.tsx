@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useGetInvoices, getGetInvoicesQueryKey, useCreateInvoice, useUpdateInvoice, useDeleteInvoice, useGetClients, getGetClientsQueryKey } from '@workspace/api-client-react';
 import { useQueryClient } from '@tanstack/react-query';
+import { useToast } from '@/hooks/use-toast';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -38,6 +39,7 @@ function StatusBadge({ status }: { status: string }) {
 
 export default function Invoices() {
   const queryClient = useQueryClient();
+  const { toast } = useToast();
   const [search, setSearch] = useState('');
   const [isAddOpen, setIsAddOpen] = useState(false);
 
@@ -51,19 +53,35 @@ export default function Invoices() {
 
   const onSubmit = (data: z.infer<typeof schema>) => {
     createInvoice.mutate({ data }, {
-      onSuccess: () => { queryClient.invalidateQueries({ queryKey: getGetInvoicesQueryKey() }); setIsAddOpen(false); form.reset(); },
+      onSuccess: (inv) => {
+        queryClient.invalidateQueries({ queryKey: getGetInvoicesQueryKey() });
+        setIsAddOpen(false);
+        form.reset();
+        toast({ title: 'Invoice created', description: `${(inv as { invoiceNumber?: string }).invoiceNumber || 'Invoice'} added successfully.` });
+      },
+      onError: () => toast({ title: 'Error', description: 'Failed to create invoice.', variant: 'destructive' }),
     });
   };
 
-  const handleMarkPaid = (id: number) => {
+  const handleMarkPaid = (id: number, invoiceNumber: string) => {
     updateInvoice.mutate({ id, data: { status: 'Paid', paidOn: new Date().toISOString().slice(0, 10) } }, {
-      onSuccess: () => queryClient.invalidateQueries({ queryKey: getGetInvoicesQueryKey() }),
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: getGetInvoicesQueryKey() });
+        toast({ title: 'Invoice paid', description: `${invoiceNumber} marked as paid.` });
+      },
+      onError: () => toast({ title: 'Error', description: 'Failed to update invoice.', variant: 'destructive' }),
     });
   };
 
-  const handleDelete = (id: number) => {
-    if (confirm('Delete this invoice?')) {
-      deleteInvoice.mutate({ id }, { onSuccess: () => queryClient.invalidateQueries({ queryKey: getGetInvoicesQueryKey() }) });
+  const handleDelete = (id: number, invoiceNumber: string) => {
+    if (confirm(`Delete invoice ${invoiceNumber}? This cannot be undone.`)) {
+      deleteInvoice.mutate({ id }, {
+        onSuccess: () => {
+          queryClient.invalidateQueries({ queryKey: getGetInvoicesQueryKey() });
+          toast({ title: 'Invoice deleted', description: `${invoiceNumber} has been removed.`, variant: 'destructive' });
+        },
+        onError: () => toast({ title: 'Error', description: 'Failed to delete invoice.', variant: 'destructive' }),
+      });
     }
   };
 
@@ -166,11 +184,11 @@ export default function Invoices() {
                 <TableCell className="text-right">
                   <div className="flex justify-end gap-2">
                     {inv.status !== 'Paid' && (
-                      <Button variant="ghost" size="sm" className="text-emerald-500 h-8 px-2 text-xs" onClick={() => handleMarkPaid(inv.id)}>
+                      <Button variant="ghost" size="sm" className="text-emerald-500 h-8 px-2 text-xs" onClick={() => handleMarkPaid(inv.id, inv.invoiceNumber)}>
                         <CheckCircle2 className="w-3 h-3 mr-1" />Mark Paid
                       </Button>
                     )}
-                    <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/10" onClick={() => handleDelete(inv.id)}>
+                    <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/10" onClick={() => handleDelete(inv.id, inv.invoiceNumber)}>
                       <Trash2 className="h-4 w-4" />
                     </Button>
                   </div>
