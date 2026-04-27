@@ -145,7 +145,7 @@ const FEATURES = [
   { icon: Server, title: 'Works offline', desc: 'Native apps cache the last view so you can browse without wifi.' },
 ];
 
-export default function Download() {
+export default function DownloadPage() {
   const [detected, setDetected] = React.useState<Platform>('web');
 
   React.useEffect(() => {
