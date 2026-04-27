@@ -1,5 +1,6 @@
-const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
-const API = `${BASE}/api/admin`;
+import { API_PREFIX } from "./api-base";
+
+const API = `${API_PREFIX}/admin`;
 
 export async function adminFetch<T>(path: string, options?: RequestInit): Promise<T> {
   const res = await fetch(`${API}${path}`, {

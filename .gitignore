@@ -47,3 +47,18 @@ Thumbs.db
 # Replit
 .cache/
 .local/
+
+# Large archives / one-off bundles (do not commit)
+*.zip
+*.tar
+*.tar.gz
+
+# Electron build outputs
+electron/dist/
+electron/out/
+
+# Local environment files
+.env
+.env.local
+.env.*.local
+
