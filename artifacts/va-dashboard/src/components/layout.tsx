@@ -3,7 +3,7 @@ import { useLocation, Link } from 'wouter';
 import {
   LayoutDashboard, Users, ShoppingCart, CreditCard, Landmark,
   FileText, AlertTriangle, CheckSquare, TrendingUp, Receipt, Shield,
-  CalendarDays, Menu, Bell, Search, Settings, ChevronRight, X, BookOpen, Sheet
+  CalendarDays, Menu, Bell, Search, Settings, ChevronRight, X, BookOpen, Sheet, Download
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -25,6 +25,7 @@ const navItems = [
   { href: '/daily-login', label: 'Daily Logins', icon: CalendarDays },
   { href: '/sheets-sync', label: 'Sheets Sync', icon: Sheet },
   { href: '/manual', label: 'User Manual', icon: BookOpen },
+  { href: '/download', label: 'Get the Apps', icon: Download },
 ];
 
 export function Layout({ children }: { children: React.ReactNode }) {
