@@ -10,7 +10,7 @@ import {
   ResponsiveContainer, Legend,
 } from 'recharts';
 
-const BASE = import.meta.env.BASE_URL.replace(/\/$/, '');
+import { API_PREFIX } from '@/lib/api-base';
 
 function KpiCard({ title, value, subtitle, icon: Icon, alert, href }: {
   title: string;
@@ -104,7 +104,7 @@ export default function Dashboard() {
   const { data: chartData, isLoading: isLoadingChart } = useQuery<ChartPoint[]>({
     queryKey: ['dashboard-chart'],
     queryFn: async () => {
-      const r = await fetch(`${BASE}/api/dashboard/chart`);
+      const r = await fetch(`${API_PREFIX}/dashboard/chart`);
       if (!r.ok) throw new Error('Failed to fetch chart data');
       return r.json() as Promise<ChartPoint[]>;
     },

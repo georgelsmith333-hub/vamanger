@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Separator } from "@/components/ui/separator";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
-const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
+import { API_PREFIX } from "@/lib/api-base";
 
 const TABLES = [
   { key: "clients", label: "Clients" },
@@ -45,7 +45,7 @@ export default function SheetsSync() {
     }
     setExporting(true);
     try {
-      const resp = await fetch(`${BASE}/api/sheets/export`, {
+      const resp = await fetch(`${API_PREFIX}/sheets/export`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ table, sheetId }),
