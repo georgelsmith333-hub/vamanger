@@ -4,9 +4,9 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 
-import { API_PREFIX } from "@/lib/api-base";
+const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
 
-function RestoreSection({ toast }: { toast: ReturnType<typeof useToast>["toast"] }) {
+function RestoreSection({ toast, BASE }: { toast: ReturnType<typeof useToast>["toast"]; BASE: string }) {
   const fileRef = useRef<HTMLInputElement>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [restoring, setRestoring] = useState(false);
@@ -25,7 +25,7 @@ function RestoreSection({ toast }: { toast: ReturnType<typeof useToast>["toast"]
     try {
       const text = await selectedFile.text();
       const json = JSON.parse(text);
-      const res = await fetch(`${API_PREFIX}/admin/restore`, {
+      const res = await fetch(`${BASE}/api/admin/restore`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(json),
@@ -124,7 +124,7 @@ export default function AdminExport() {
   const handleExport = async (entity: { key: string; label: string }) => {
     setDownloading(entity.key);
     try {
-      const res = await fetch(`${API_PREFIX}/admin/export/${entity.key}`);
+      const res = await fetch(`${BASE}/api/admin/export/${entity.key}`);
       if (!res.ok) throw new Error("Export failed");
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
@@ -153,7 +153,7 @@ export default function AdminExport() {
   const handleFullBackup = async () => {
     setDownloading("__backup__");
     try {
-      const res = await fetch(`${API_PREFIX}/admin/backup`);
+      const res = await fetch(`${BASE}/api/admin/backup`);
       if (!res.ok) throw new Error("Backup failed");
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
@@ -243,7 +243,7 @@ export default function AdminExport() {
       </div>
 
       {/* Restore Section */}
-      <RestoreSection toast={toast} />
+      <RestoreSection toast={toast} BASE={BASE} />
     </div>
   );
 }
