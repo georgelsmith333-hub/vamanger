@@ -20,6 +20,7 @@ import Recovery from "@/pages/recovery";
 import DailyLogin from "@/pages/daily-login";
 import UserManual from "@/pages/user-manual";
 import SheetsSync from "@/pages/sheets-sync";
+import Download from "@/pages/download";
 import Admin from "@/pages/admin/index";
 import AdminLogin from "@/pages/admin/login";
 
@@ -36,6 +37,7 @@ const queryClient = new QueryClient({
 function Router() {
   const [location] = useLocation();
   const isAdmin = location.startsWith("/admin");
+  const isDownload = location.startsWith("/download");
 
   if (isAdmin) {
     return (
@@ -45,6 +47,10 @@ function Router() {
         <Route path="/admin/:rest*" component={Admin} />
       </Switch>
     );
+  }
+
+  if (isDownload) {
+    return <Download />;
   }
 
   return (
