@@ -41,6 +41,6 @@ channel = "stable-25_05"
 [userenv]
 
 [userenv.shared]
-GOOGLE_CLIENT_ID = "1020663786264-5hkq71vhfdgfuoh7dli8rtjbl8ev667f.apps.googleusercontent.com"
-GOOGLE_PROJECT_ID = "vamanager-494521"
+GOOGLE_CLIENT_ID = "97949089714-sgdjdaadv81egajru7qhdmu7g6843e19.apps.googleusercontent.com"
+GOOGLE_PROJECT_ID = "vamanager-494602"
 GOOGLE_SHEET_ID = "1EyUzVtqciLVImF9prX7FrCCSAdyaKkj_l2Un2UDB2TA"
