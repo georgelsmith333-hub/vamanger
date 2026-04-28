@@ -14,6 +14,9 @@ import recoveryRouter from "./recovery";
 import dailyLoginsRouter from "./daily-logins";
 import adminRouter from "./admin";
 import sheetsRouter from "./sheets";
+import usersRouter from "./users";
+import notificationsRouter from "./notifications";
+import vaultRouter from "./vault";
 
 const router: IRouter = Router();
 
@@ -32,5 +35,8 @@ router.use(expensesRouter);
 router.use(recoveryRouter);
 router.use(dailyLoginsRouter);
 router.use(sheetsRouter);
+router.use(usersRouter);
+router.use(notificationsRouter);
+router.use(vaultRouter);
 
 export default router;
