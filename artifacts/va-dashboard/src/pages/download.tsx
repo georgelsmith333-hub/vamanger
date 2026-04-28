@@ -6,7 +6,8 @@ import {
   Smartphone, Apple, Monitor, Download as DownloadIcon, ArrowRight,
   CheckCircle2, Globe, ShieldCheck, Zap, Server,
 } from 'lucide-react';
-import { Link } from 'wouter';
+import { Link, useLocation } from 'wouter';
+import { grantDashboardAccess } from '@/App';
 
 type Platform = 'android' | 'ios' | 'windows' | 'macos' | 'linux' | 'web';
 
@@ -147,10 +148,16 @@ const FEATURES = [
 
 export default function DownloadPage() {
   const [detected, setDetected] = React.useState<Platform>('web');
+  const [, navigate] = useLocation();
 
   React.useEffect(() => {
     setDetected(detectPlatform());
   }, []);
+
+  function enterDashboard() {
+    grantDashboardAccess();
+    navigate('/');
+  }
 
   const primary = OPTIONS[detected];
   const others = (Object.keys(OPTIONS) as Platform[])
@@ -172,11 +179,9 @@ export default function DownloadPage() {
               <p className="text-xs text-muted-foreground leading-none">eBay VA Platform</p>
             </div>
           </div>
-          <Link href="/">
-            <Button variant="ghost" size="sm" className="gap-1.5">
-              Open Web App <ArrowRight className="w-3.5 h-3.5" />
-            </Button>
-          </Link>
+          <Button variant="ghost" size="sm" className="gap-1.5" onClick={enterDashboard}>
+            Open Web App <ArrowRight className="w-3.5 h-3.5" />
+          </Button>
         </div>
       </header>
 
@@ -192,6 +197,11 @@ export default function DownloadPage() {
           <p className="text-muted-foreground text-base md:text-lg">
             One sign-in across web, mobile, and desktop. Pick your preferred platform — your data lives in the cloud and stays in sync everywhere.
           </p>
+          <div className="mt-6 flex flex-col sm:flex-row gap-3 justify-center">
+            <Button size="lg" className="gap-2 font-semibold px-8" onClick={enterDashboard}>
+              Enter Dashboard <ArrowRight className="w-4 h-4" />
+            </Button>
+          </div>
         </div>
 
         {/* Primary card */}
