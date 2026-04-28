@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 
-const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
+import { API_BASE as BASE } from "@/lib/api-base";
 
 function RestoreSection({ toast, BASE }: { toast: ReturnType<typeof useToast>["toast"]; BASE: string }) {
   const fileRef = useRef<HTMLInputElement>(null);
