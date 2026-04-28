@@ -24,7 +24,7 @@ router.get("/admin/stats", async (_req, res): Promise<void> => {
 
   res.json({
     clients: { total: clients.length, active: clients.filter(c => c.status === "Active").length },
-    ebayAccounts: { total: ebay.length, active: ebay.filter(a => a.status === "Active").length },
+    ebayAccounts: { total: ebay.length, active: ebay.filter(a => (a.accountHealth ?? "").toLowerCase() !== "suspended" && (a.accountHealth ?? "").toLowerCase() !== "restricted").length },
     invoices: {
       total: invoices.length,
       paid: invoices.filter(i => i.status === "Paid").length,

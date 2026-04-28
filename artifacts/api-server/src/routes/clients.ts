@@ -1,6 +1,9 @@
 import { Router } from "express";
 import { eq } from "drizzle-orm";
 import { db, clientsTable, activityTable, ebayAccountsTable } from "@workspace/db";
+import { coerceNumeric } from "../lib/coerce";
+
+const NUMERIC_KEYS = ["hourlyRate", "totalSales"] as const;
 import {
   CreateClientBody,
   UpdateClientBody,
@@ -41,7 +44,7 @@ router.post("/clients", async (req, res): Promise<void> => {
     res.status(400).json({ error: parsed.error.message });
     return;
   }
-  const [client] = await db.insert(clientsTable).values(parsed.data).returning();
+  const [client] = await db.insert(clientsTable).values(coerceNumeric(parsed.data, NUMERIC_KEYS) as unknown as typeof clientsTable.$inferInsert).returning();
   await db.insert(activityTable).values({
     type: "client_created",
     description: `New client added: ${client.clientName}`,
@@ -87,7 +90,8 @@ router.patch("/clients/:id", async (req, res): Promise<void> => {
   // Capture previous state for undo
   const [before] = await db.select().from(clientsTable).where(eq(clientsTable.id, params.data.id));
   const updateData: Record<string, unknown> = {};
-  for (const [k, v] of Object.entries(parsed.data)) {
+  const coerced = coerceNumeric(parsed.data, NUMERIC_KEYS);
+  for (const [k, v] of Object.entries(coerced)) {
     if (v !== undefined) updateData[k] = v;
   }
   const [client] = await db.update(clientsTable).set(updateData).where(eq(clientsTable.id, params.data.id)).returning();

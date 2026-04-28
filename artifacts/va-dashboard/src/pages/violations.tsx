@@ -19,12 +19,13 @@ import * as z from 'zod';
 
 const schema = z.object({
   clientId: z.coerce.number().min(1, 'Client is required'),
-  ebayUsername: z.string().optional(),
+  ebayUsername: z.string().min(1, 'eBay username is required'),
   date: z.string().optional(),
   policyCode: z.string().optional(),
   severity: z.string().default('Warning'),
   description: z.string().min(1, 'Description is required'),
   actionTaken: z.string().optional(),
+  resolved: z.boolean().default(false),
   notes: z.string().optional(),
 });
 
@@ -56,8 +57,8 @@ export default function Violations() {
   const form = useForm<z.infer<typeof schema>>({ resolver: zodResolver(schema), defaultValues: { severity: 'Warning' } });
   const editForm = useForm<z.infer<typeof schema>>({ resolver: zodResolver(schema) });
 
-  const openEditViolation = (v: { id: number; clientId?: number | null; ebayUsername?: string | null; date?: string | null; policyCode?: string | null; severity?: string | null; description: string; actionTaken?: string | null; notes?: string | null }) => {
-    const reset = { clientId: v.clientId ?? 0, ebayUsername: v.ebayUsername ?? '', date: v.date ?? '', policyCode: v.policyCode ?? '', severity: v.severity ?? 'Warning', description: v.description, actionTaken: v.actionTaken ?? '', notes: v.notes ?? '' };
+  const openEditViolation = (v: { id: number; clientId?: number | null; ebayUsername?: string | null; date?: string | null; policyCode?: string | null; severity?: string | null; description: string; actionTaken?: string | null; resolved?: boolean | null; notes?: string | null }) => {
+    const reset = { clientId: v.clientId ?? 0, ebayUsername: v.ebayUsername ?? '', date: v.date ?? '', policyCode: v.policyCode ?? '', severity: v.severity ?? 'Warning', description: v.description, actionTaken: v.actionTaken ?? '', resolved: v.resolved ?? false, notes: v.notes ?? '' };
     setEditingViolation({ id: v.id, ...reset });
     editForm.reset(reset);
   };
@@ -167,7 +168,7 @@ export default function Violations() {
           <Search className="w-4 h-4 text-muted-foreground" />
           <Input placeholder="Search violations..." value={search} onChange={e => setSearch(e.target.value)} className="h-9" />
         </div>
-        <Button variant="outline" size="sm" onClick={() => exportToCsv(filtered as Record<string, unknown>[], 'violations')}>
+        <Button variant="outline" size="sm" onClick={() => exportToCsv(filtered, 'violations')}>
           <Download className="w-4 h-4 mr-2" />Export CSV
         </Button>
       </div>
@@ -190,7 +191,7 @@ export default function Violations() {
                 <TableCell className="font-mono text-sm">{v.ebayUsername || '-'}</TableCell>
                 <TableCell>{v.date || '-'}</TableCell>
                 <TableCell><code className="text-xs bg-muted px-1 py-0.5 rounded">{v.policyCode || '-'}</code></TableCell>
-                <TableCell><SeverityBadge severity={v.severity} /></TableCell>
+                <TableCell><SeverityBadge severity={v.severity ?? null} /></TableCell>
                 <TableCell className="max-w-[200px] truncate text-sm">{v.description}</TableCell>
                 <TableCell>
                   {v.resolved
@@ -204,7 +205,7 @@ export default function Violations() {
                         <ShieldCheck className="w-3 h-3 mr-1" />Resolve
                       </Button>
                     )}
-                    <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground" onClick={() => openEditViolation(v)}>
+                    <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground" onClick={() => openEditViolation({ ...v, description: v.description ?? '' })}>
                       <Edit2 className="h-4 w-4" />
                     </Button>
                     <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/10" onClick={() => handleDelete(v.id)}>

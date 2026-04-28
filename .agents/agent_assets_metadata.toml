@@ -6,3 +6,9 @@ id = "CIELXveReKiyjWEHQp4HB"
 uri = "file://attached_assets/guides/VA-Manager-Setup-Guide.pdf"
 type = "pdf"
 title = "VA Manager — OAuth Login & Google Sheets Setup Guide"
+
+[[outputs]]
+id = "11YhxhNk4YZ_UdUoD_9p8"
+uri = "file://va-cloudflare-upload.zip"
+type = "unspecified"
+title = "VA Dashboard — Final (with all security fixes)"

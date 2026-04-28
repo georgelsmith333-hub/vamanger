@@ -182,7 +182,7 @@ export default function Invoices() {
           <Search className="w-4 h-4 text-muted-foreground" />
           <Input placeholder="Search invoices..." value={search} onChange={e => setSearch(e.target.value)} className="h-9" />
         </div>
-        <Button variant="outline" size="sm" onClick={() => exportToCsv(filtered as Record<string, unknown>[], 'invoices')}>
+        <Button variant="outline" size="sm" onClick={() => exportToCsv(filtered, 'invoices')}>
           <Download className="w-4 h-4 mr-2" />Export CSV
         </Button>
       </div>

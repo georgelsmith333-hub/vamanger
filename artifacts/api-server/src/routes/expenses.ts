@@ -10,7 +10,9 @@ import {
   UpdateExpenseResponse,
 } from "@workspace/api-zod";
 import { serializeDates } from "../lib/serialize";
+import { coerceNumeric } from "../lib/coerce";
 
+const NUMERIC_KEYS = ["amount"] as const;
 const router = Router();
 
 function enrichExpense(e: typeof expensesTable.$inferSelect, clients: { id: number; clientName: string }[]) {
@@ -34,7 +36,7 @@ router.post("/expenses", async (req, res): Promise<void> => {
     res.status(400).json({ error: parsed.error.message });
     return;
   }
-  const [expense] = await db.insert(expensesTable).values(parsed.data).returning();
+  const [expense] = await db.insert(expensesTable).values(coerceNumeric(parsed.data, NUMERIC_KEYS) as unknown as typeof expensesTable.$inferInsert).returning();
   const clients = await db.select({ id: clientsTable.id, clientName: clientsTable.clientName }).from(clientsTable);
   res.status(201).json(enrichExpense(expense, clients));
 });
@@ -51,7 +53,8 @@ router.patch("/expenses/:id", async (req, res): Promise<void> => {
     return;
   }
   const updateData: Record<string, unknown> = {};
-  for (const [k, v] of Object.entries(parsed.data)) {
+  const coerced = coerceNumeric(parsed.data, NUMERIC_KEYS);
+  for (const [k, v] of Object.entries(coerced)) {
     if (v !== undefined) updateData[k] = v;
   }
   const [expense] = await db.update(expensesTable).set(updateData).where(eq(expensesTable.id, params.data.id)).returning();

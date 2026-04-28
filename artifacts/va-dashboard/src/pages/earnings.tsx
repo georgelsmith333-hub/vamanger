@@ -137,7 +137,7 @@ export default function Earnings() {
           <p className="text-muted-foreground">Monthly earnings per client from eBay dropshipping.</p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" onClick={() => exportToCsv((earnings || []) as Record<string, unknown>[], 'earnings')}><Download className="w-4 h-4 mr-2" />Export CSV</Button>
+          <Button variant="outline" onClick={() => exportToCsv((earnings || []), 'earnings')}><Download className="w-4 h-4 mr-2" />Export CSV</Button>
           <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
           <DialogTrigger asChild><Button><Plus className="w-4 h-4 mr-2" /> Record Earning</Button></DialogTrigger>
           <DialogContent className="max-w-md"><DialogHeader><DialogTitle>Record Earning</DialogTitle></DialogHeader>

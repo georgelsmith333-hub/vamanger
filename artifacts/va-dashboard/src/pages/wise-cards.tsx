@@ -17,7 +17,7 @@ import { useToast } from '@/hooks/use-toast';
 import * as z from 'zod';
 
 const schema = z.object({
-  cardCode: z.string().optional(),
+  cardCode: z.string().min(1, 'Card code required'),
   clientId: z.coerce.number().min(1, 'Client is required'),
   provider: z.string().default('Wise'),
   cardType: z.string().default('Debit'),
@@ -29,6 +29,7 @@ const schema = z.object({
   wiseEmail: z.string().optional(),
   balance: z.coerce.number().optional(),
   status: z.string().default('Active'),
+  wise2fa: z.boolean().default(false),
   notes: z.string().optional(),
 });
 
@@ -43,7 +44,7 @@ export default function WiseCards() {
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [editingCard, setEditingCard] = useState<Card | null>(null);
 
-  const { data: cards, isLoading } = useGetWiseCards({ query: { queryKey: getGetWiseCardsQueryKey() } });
+  const { data: cards, isLoading } = useGetWiseCards(undefined, { query: { queryKey: getGetWiseCardsQueryKey() } });
   const { data: clients } = useGetClients({ query: { queryKey: getGetClientsQueryKey() } });
   const createCard = useCreateWiseCard();
   const updateCard = useUpdateWiseCard();

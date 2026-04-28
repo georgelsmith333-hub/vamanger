@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { eq } from "drizzle-orm";
 import { db, earningsTable, clientsTable } from "@workspace/db";
+import { coerceNumeric } from "../lib/coerce";
 import {
   CreateEarningBody,
   UpdateEarningBody,
@@ -51,7 +52,7 @@ router.post("/earnings", async (req, res): Promise<void> => {
     res.status(400).json({ error: parsed.error.message });
     return;
   }
-  const [earning] = await db.insert(earningsTable).values(parsed.data).returning();
+  const [earning] = await db.insert(earningsTable).values(coerceNumeric(parsed.data, ["amount"] as const) as unknown as typeof earningsTable.$inferInsert).returning();
   const clients = await db.select({ id: clientsTable.id, clientName: clientsTable.clientName }).from(clientsTable);
   res.status(201).json(enrichEarning(earning, clients));
 });
@@ -68,7 +69,8 @@ router.patch("/earnings/:id", async (req, res): Promise<void> => {
     return;
   }
   const updateData: Record<string, unknown> = {};
-  for (const [k, v] of Object.entries(parsed.data)) {
+  const coerced = coerceNumeric(parsed.data, ["amount"] as const);
+  for (const [k, v] of Object.entries(coerced)) {
     if (v !== undefined) updateData[k] = v;
   }
   const [earning] = await db.update(earningsTable).set(updateData).where(eq(earningsTable.id, params.data.id)).returning();

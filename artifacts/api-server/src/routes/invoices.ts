@@ -12,7 +12,9 @@ import {
 } from "@workspace/api-zod";
 import { serializeDates } from "../lib/serialize";
 import { logAudit } from "../lib/audit";
+import { coerceNumeric } from "../lib/coerce";
 
+const NUMERIC_KEYS = ["amount", "hours", "rate"] as const;
 const router = Router();
 
 function calcDaysOverdue(dueDate: string | null, status: string): number | null {
@@ -57,7 +59,7 @@ router.post("/invoices", async (req, res): Promise<void> => {
     res.status(400).json({ error: parsed.error.message });
     return;
   }
-  const [invoice] = await db.insert(invoicesTable).values(parsed.data).returning();
+  const [invoice] = await db.insert(invoicesTable).values(coerceNumeric(parsed.data, NUMERIC_KEYS) as unknown as typeof invoicesTable.$inferInsert).returning();
   const clients = await db.select({ id: clientsTable.id, clientName: clientsTable.clientName }).from(clientsTable);
   const clientName = clients.find((c) => c.id === invoice.clientId)?.clientName ?? "Unknown";
   await db.insert(activityTable).values({
@@ -89,7 +91,8 @@ router.patch("/invoices/:id", async (req, res): Promise<void> => {
   }
   const [before] = await db.select().from(invoicesTable).where(eq(invoicesTable.id, params.data.id));
   const updateData: Record<string, unknown> = {};
-  for (const [k, v] of Object.entries(parsed.data)) {
+  const coerced = coerceNumeric(parsed.data, NUMERIC_KEYS);
+  for (const [k, v] of Object.entries(coerced)) {
     if (v !== undefined) updateData[k] = v;
   }
   const [invoice] = await db.update(invoicesTable).set(updateData).where(eq(invoicesTable.id, params.data.id)).returning();

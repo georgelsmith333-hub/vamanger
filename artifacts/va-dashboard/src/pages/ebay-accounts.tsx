@@ -51,7 +51,7 @@ export default function EbayAccounts() {
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [editingAccount, setEditingAccount] = useState<Account | null>(null);
 
-  const { data: accounts, isLoading } = useGetEbayAccounts({ query: { queryKey: getGetEbayAccountsQueryKey() } });
+  const { data: accounts, isLoading } = useGetEbayAccounts(undefined, { query: { queryKey: getGetEbayAccountsQueryKey() } });
   const { data: clients } = useGetClients({ query: { queryKey: getGetClientsQueryKey() } });
   const createAccount = useCreateEbayAccount();
   const updateAccount = useUpdateEbayAccount();
@@ -192,7 +192,7 @@ export default function EbayAccounts() {
           <Search className="w-4 h-4 text-muted-foreground" />
           <Input placeholder="Search accounts..." value={search} onChange={e => setSearch(e.target.value)} className="h-9" />
         </div>
-        <Button variant="outline" size="sm" onClick={() => exportToCsv(filtered as Record<string, unknown>[], 'ebay-accounts')}>
+        <Button variant="outline" size="sm" onClick={() => exportToCsv(filtered, 'ebay-accounts')}>
           <Download className="w-4 h-4 mr-2" />Export CSV
         </Button>
       </div>
@@ -237,8 +237,8 @@ export default function EbayAccounts() {
                     : <span className="text-muted-foreground text-xs">Clear</span>}
                 </TableCell>
                 <TableCell>
-                  <Badge variant={acc.status === 'Active' ? 'default' : 'secondary'} className={acc.status === 'Active' ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30 text-xs' : 'text-xs'}>
-                    {acc.status || 'Active'}
+                  <Badge variant="default" className="bg-emerald-500/20 text-emerald-400 border-emerald-500/30 text-xs">
+                    Active
                   </Badge>
                 </TableCell>
                 <TableCell className="text-right">

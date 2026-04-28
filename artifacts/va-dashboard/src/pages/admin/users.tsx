@@ -11,9 +11,11 @@ import { Plus, Pencil, Trash2, Users, Shield, Eye, UserCheck } from "lucide-reac
 import { API_BASE as BASE } from "@/lib/api-base";
 import { getAdminToken } from "@/pages/admin/login";
 
-function authHeaders() {
+function authHeaders(): HeadersInit {
   const token = getAdminToken();
-  return token ? { "Content-Type": "application/json", "X-Admin-Token": token } : { "Content-Type": "application/json" };
+  const h: Record<string, string> = { "Content-Type": "application/json" };
+  if (token) h["X-Admin-Token"] = token;
+  return h;
 }
 const fetchJson = <T,>(url: string): Promise<T> => fetch(url, { headers: authHeaders() }).then(r => r.json());
 

@@ -188,7 +188,7 @@ export default function Clients() {
           <Search className="w-4 h-4 text-muted-foreground" />
           <Input placeholder="Search clients..." value={search} onChange={e => setSearch(e.target.value)} className="h-9" data-testid="search-clients" />
         </div>
-        <Button variant="outline" size="sm" onClick={() => exportToCsv(filteredClients as Record<string, unknown>[], 'clients')}>
+        <Button variant="outline" size="sm" onClick={() => exportToCsv(filteredClients, 'clients')}>
           <Download className="w-4 h-4 mr-2" />Export CSV
         </Button>
       </div>

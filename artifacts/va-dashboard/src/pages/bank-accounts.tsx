@@ -17,7 +17,7 @@ import { useToast } from '@/hooks/use-toast';
 import * as z from 'zod';
 
 const schema = z.object({
-  bankCode: z.string().optional(),
+  bankCode: z.string().min(1, 'Bank code required'),
   clientId: z.coerce.number().min(1, 'Client is required'),
   bankName: z.string().min(1, 'Bank name required'),
   accountHolder: z.string().min(1, 'Account holder required'),

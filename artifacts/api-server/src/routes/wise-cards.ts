@@ -11,7 +11,9 @@ import {
   UpdateWiseCardResponse,
 } from "@workspace/api-zod";
 import { serializeDates } from "../lib/serialize";
+import { coerceNumeric } from "../lib/coerce";
 
+const NUMERIC_KEYS = ["balance"] as const;
 const router = Router();
 
 function daysToExpiry(expiryMonth: number | null, expiryYear: number | null): number | null {
@@ -47,7 +49,7 @@ router.post("/wise-cards", async (req, res): Promise<void> => {
     res.status(400).json({ error: parsed.error.message });
     return;
   }
-  const [card] = await db.insert(wiseCardsTable).values(parsed.data).returning();
+  const [card] = await db.insert(wiseCardsTable).values(coerceNumeric(parsed.data, NUMERIC_KEYS) as unknown as typeof wiseCardsTable.$inferInsert).returning();
   const clients = await db.select({ id: clientsTable.id, clientName: clientsTable.clientName }).from(clientsTable);
   res.status(201).json(enrichCard(card, clients));
 });
@@ -64,7 +66,8 @@ router.patch("/wise-cards/:id", async (req, res): Promise<void> => {
     return;
   }
   const updateData: Record<string, unknown> = {};
-  for (const [k, v] of Object.entries(parsed.data)) {
+  const coerced = coerceNumeric(parsed.data, NUMERIC_KEYS);
+  for (const [k, v] of Object.entries(coerced)) {
     if (v !== undefined) updateData[k] = v;
   }
   const [card] = await db.update(wiseCardsTable).set(updateData).where(eq(wiseCardsTable.id, params.data.id)).returning();

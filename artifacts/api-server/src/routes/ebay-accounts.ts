@@ -13,7 +13,9 @@ import {
   UpdateEbayAccountResponse,
 } from "@workspace/api-zod";
 import { serializeDates } from "../lib/serialize";
+import { coerceNumeric } from "../lib/coerce";
 
+const NUMERIC_KEYS = ["sellingLimit"] as const;
 const router = Router();
 
 function enrichAccount(account: typeof ebayAccountsTable.$inferSelect, clients: { id: number; clientName: string }[]) {
@@ -42,7 +44,7 @@ router.post("/ebay-accounts", async (req, res): Promise<void> => {
     res.status(400).json({ error: parsed.error.message });
     return;
   }
-  const [account] = await db.insert(ebayAccountsTable).values(parsed.data).returning();
+  const [account] = await db.insert(ebayAccountsTable).values(coerceNumeric(parsed.data, NUMERIC_KEYS) as unknown as typeof ebayAccountsTable.$inferInsert).returning();
   const clients = await db.select({ id: clientsTable.id, clientName: clientsTable.clientName }).from(clientsTable);
   await db.insert(activityTable).values({
     type: "ebay_account_added",
@@ -79,7 +81,8 @@ router.patch("/ebay-accounts/:id", async (req, res): Promise<void> => {
     return;
   }
   const updateData: Record<string, unknown> = {};
-  for (const [k, v] of Object.entries(parsed.data)) {
+  const coerced = coerceNumeric(parsed.data, NUMERIC_KEYS);
+  for (const [k, v] of Object.entries(coerced)) {
     if (v !== undefined) updateData[k] = v;
   }
   const [account] = await db.update(ebayAccountsTable).set(updateData).where(eq(ebayAccountsTable.id, params.data.id)).returning();

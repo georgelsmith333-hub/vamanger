@@ -166,7 +166,11 @@ router.post("/admin/vault/test-sheets", async (req, res): Promise<void> => {
   }
   try {
     const { google } = await import("googleapis");
-    const auth = new google.auth.JWT(saEmail, undefined, saKey.replace(/\\n/g, "\n"), ["https://www.googleapis.com/auth/spreadsheets.readonly"]);
+    const auth = new google.auth.JWT({
+      email: saEmail,
+      key: saKey.replace(/\\n/g, "\n"),
+      scopes: ["https://www.googleapis.com/auth/spreadsheets.readonly"],
+    });
     await auth.authorize();
     res.json({ success: true, message: "Google Sheets connection successful" });
   } catch (e: any) {

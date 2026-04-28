@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { useGetDashboardSummary, getGetDashboardSummaryQueryKey } from '@workspace/api-client-react';
+import { NotificationBell } from '@/components/notification-bell';
 
 const navItems = [
   { href: '/', label: 'Dashboard', icon: LayoutDashboard },
@@ -139,21 +140,13 @@ export function Layout({ children }: { children: React.ReactNode }) {
             </div>
           </div>
           <div className="flex items-center gap-2">
-            {/* Alert summary */}
             {alertCount > 0 && (
               <div className="hidden sm:flex items-center gap-1.5 text-xs text-muted-foreground bg-muted/50 rounded-full px-3 py-1">
                 <span className="w-1.5 h-1.5 rounded-full bg-destructive" />
                 {alertCount} alert{alertCount !== 1 ? 's' : ''} need attention
               </div>
             )}
-            <Button variant="ghost" size="icon" className="relative h-8 w-8">
-              <Bell className="w-4 h-4" />
-              {alertCount > 0 && (
-                <span className="absolute top-1 right-1 w-4 h-4 rounded-full bg-destructive text-white text-xs flex items-center justify-center font-bold leading-none">
-                  {alertCount > 9 ? '9+' : alertCount}
-                </span>
-              )}
-            </Button>
+            <NotificationBell />
           </div>
         </header>
 

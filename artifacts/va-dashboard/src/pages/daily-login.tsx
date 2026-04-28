@@ -57,10 +57,10 @@ export default function DailyLogin() {
   const [isAddOpen, setIsAddOpen] = useState(false);
   const now = new Date();
 
-  const { data: logins, isLoading } = useGetDailyLogins({
-    params: { year: now.getFullYear(), month: now.getMonth() + 1 },
-    query: { queryKey: [...getGetDailyLoginsQueryKey(), now.getFullYear(), now.getMonth() + 1] }
-  });
+  const { data: logins, isLoading } = useGetDailyLogins(
+    { year: now.getFullYear(), month: now.getMonth() + 1 },
+    { query: { queryKey: [...getGetDailyLoginsQueryKey(), now.getFullYear(), now.getMonth() + 1] } },
+  );
   const { data: clients } = useGetClients({ query: { queryKey: getGetClientsQueryKey() } });
   const createLogin = useCreateDailyLogin();
   const updateLogin = useUpdateDailyLogin();

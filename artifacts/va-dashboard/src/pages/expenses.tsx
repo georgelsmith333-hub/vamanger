@@ -101,7 +101,7 @@ export default function Expenses() {
     }
   };
 
-  const filtered = expenses?.filter(e => (e.vendor + e.description + e.category).toLowerCase().includes(search.toLowerCase())) || [];
+  const filtered = expenses?.filter(e => ((e.vendor ?? '') + (e.description ?? '') + (e.category ?? '')).toLowerCase().includes(search.toLowerCase())) || [];
   const total = expenses?.reduce((s, e) => s + e.amount, 0) || 0;
   const recurring = expenses?.filter(e => e.recurring).reduce((s, e) => s + e.amount, 0) || 0;
 
@@ -177,7 +177,7 @@ export default function Expenses() {
           <Search className="w-4 h-4 text-muted-foreground" />
           <Input placeholder="Search expenses..." value={search} onChange={e => setSearch(e.target.value)} className="h-9" />
         </div>
-        <Button variant="outline" size="sm" onClick={() => exportToCsv(filtered as Record<string, unknown>[], 'expenses')}>
+        <Button variant="outline" size="sm" onClick={() => exportToCsv(filtered, 'expenses')}>
           <Download className="w-4 h-4 mr-2" />Export CSV
         </Button>
       </div>
@@ -203,7 +203,7 @@ export default function Expenses() {
                 <TableCell className="font-medium">{exp.vendor}</TableCell>
                 <TableCell className="text-muted-foreground text-sm max-w-[160px] truncate">{exp.description}</TableCell>
                 <TableCell className="font-medium text-destructive">${Number(exp.amount).toFixed(2)}</TableCell>
-                <TableCell className="text-muted-foreground text-sm">{exp.clientName || 'General'}</TableCell>
+                <TableCell className="text-muted-foreground text-sm">{exp.linkedClientName || 'General'}</TableCell>
                 <TableCell>
                   {exp.recurring
                     ? <div className="flex items-center gap-1 text-amber-500 text-xs"><RefreshCw className="w-3 h-3" />Monthly</div>
@@ -212,7 +212,7 @@ export default function Expenses() {
                 <TableCell className="text-right">
                   <div className="flex justify-end gap-1">
                     <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(exp as Expense)}><Edit2 className="h-4 w-4" /></Button>
-                    <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/10" onClick={() => handleDelete(exp.id, exp.vendor)}><Trash2 className="h-4 w-4" /></Button>
+                    <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/10" onClick={() => handleDelete(exp.id, exp.vendor ?? 'Vendor')}><Trash2 className="h-4 w-4" /></Button>
                   </div>
                 </TableCell>
               </TableRow>

@@ -1,6 +1,7 @@
 name = "va-client-manager"
 compatibility_date = "2025-01-01"
-pages_build_output_dir = "artifacts/va-dashboard/dist"
+pages_build_output_dir = "artifacts/va-dashboard/dist/public"
 
-[build]
-command = "pnpm --filter @workspace/va-dashboard run build"
+[vars]
+PORT = "3000"
+BASE_PATH = "/"

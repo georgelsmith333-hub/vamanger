@@ -23,6 +23,7 @@ const schema = z.object({
   priority: z.string().default('Medium'),
   dueDate: z.string().optional(),
   status: z.string().default('Not Started'),
+  done: z.boolean().default(false),
   notes: z.string().optional(),
 });
 
@@ -64,9 +65,9 @@ export default function Tasks() {
   const form = useForm<z.infer<typeof schema>>({ resolver: zodResolver(schema), defaultValues: { priority: 'Medium', status: 'Not Started' } });
   const editForm = useForm<z.infer<typeof schema>>({ resolver: zodResolver(schema) });
 
-  const openEditTask = (t: { id: number; task: string; clientId?: number | null; priority?: string | null; dueDate?: string | null; status?: string | null; notes?: string | null }) => {
-    setEditingTask({ id: t.id, task: t.task, clientId: t.clientId ?? undefined, priority: t.priority ?? 'Medium', dueDate: t.dueDate ?? '', status: t.status ?? 'Not Started', notes: t.notes ?? '' });
-    editForm.reset({ task: t.task, clientId: t.clientId ?? undefined, priority: t.priority ?? 'Medium', dueDate: t.dueDate ?? '', status: t.status ?? 'Not Started', notes: t.notes ?? '' });
+  const openEditTask = (t: { id: number; task: string; clientId?: number | null; priority?: string | null; dueDate?: string | null; status?: string | null; done?: boolean | null; notes?: string | null }) => {
+    setEditingTask({ id: t.id, task: t.task, clientId: t.clientId ?? undefined, priority: t.priority ?? 'Medium', dueDate: t.dueDate ?? '', status: t.status ?? 'Not Started', done: t.done ?? false, notes: t.notes ?? '' });
+    editForm.reset({ task: t.task, clientId: t.clientId ?? undefined, priority: t.priority ?? 'Medium', dueDate: t.dueDate ?? '', status: t.status ?? 'Not Started', done: t.done ?? false, notes: t.notes ?? '' });
   };
 
   const onEditSubmit = (data: z.infer<typeof schema>) => {
@@ -176,7 +177,7 @@ export default function Tasks() {
           <Search className="w-4 h-4 text-muted-foreground" />
           <Input placeholder="Search tasks..." value={search} onChange={e => setSearch(e.target.value)} className="h-9" />
         </div>
-        <Button variant="outline" size="sm" onClick={() => exportToCsv(filtered as Record<string, unknown>[], 'tasks')}>
+        <Button variant="outline" size="sm" onClick={() => exportToCsv(filtered, 'tasks')}>
           <Download className="w-4 h-4 mr-2" />Export CSV
         </Button>
       </div>
@@ -204,12 +205,12 @@ export default function Tasks() {
                   </TableCell>
                   <TableCell className={`font-medium ${t.done ? 'line-through text-muted-foreground' : ''}`}>{t.task}</TableCell>
                   <TableCell className="text-muted-foreground">{t.clientName || '-'}</TableCell>
-                  <TableCell><PriorityBadge priority={t.priority} /></TableCell>
+                  <TableCell><PriorityBadge priority={t.priority ?? null} /></TableCell>
                   <TableCell>
                     {t.dueDate || '-'}
                     {isOverdue && <AlertCircle className="inline ml-1 w-3 h-3 text-destructive" />}
                   </TableCell>
-                  <TableCell><StatusBadge status={t.status} /></TableCell>
+                  <TableCell><StatusBadge status={t.status ?? null} /></TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-1">
                       <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground" onClick={() => openEditTask(t)}>

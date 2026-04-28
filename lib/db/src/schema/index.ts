@@ -12,3 +12,5 @@ export * from "./daily-logins";
 export * from "./activity";
 export * from "./audit-log";
 export * from "./settings";
+export * from "./users";
+export * from "./notifications";
