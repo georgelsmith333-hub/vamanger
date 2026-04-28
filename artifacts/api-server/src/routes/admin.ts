@@ -2,6 +2,7 @@ import { Router } from "express";
 import { db, auditLogTable, settingsTable, clientsTable, ebayAccountsTable, wiseCardsTable, bankAccountsTable, invoicesTable, violationsTable, tasksTable, earningsTable, expensesTable, recoveryEntriesTable, dailyLoginsTable, activityTable } from "@workspace/db";
 import { eq, desc } from "drizzle-orm";
 import { serializeDates } from "../lib/serialize";
+import { createAdminToken } from "../lib/admin-auth";
 
 const router = Router();
 
@@ -178,7 +179,8 @@ router.post("/admin/auth", async (req, res): Promise<void> => {
   const storedPassword = setting?.value ?? "admin123";
 
   if (password === storedPassword) {
-    res.json({ success: true, message: "Authenticated" });
+    const token = createAdminToken();
+    res.json({ success: true, token });
   } else {
     res.status(401).json({ error: "Invalid admin password. Check Settings if you changed it." });
   }
