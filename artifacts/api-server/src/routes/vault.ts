@@ -114,14 +114,6 @@ router.get("/admin/vault/status", async (req, res): Promise<void> => {
       masked: maskValue(env.GOOGLE_SHEET_ID),
     },
     {
-      key: "SESSION_SECRET",
-      label: "Session Secret",
-      group: "Security",
-      description: "Secret key for signing user sessions",
-      set: isSet(env.SESSION_SECRET),
-      masked: "●●●●●●●●●●●●●● (auto-generated)",
-    },
-    {
       key: "DATABASE_URL",
       label: "Database URL",
       group: "Database",
@@ -163,25 +155,6 @@ router.post("/admin/vault/change-password", async (req, res): Promise<void> => {
   res.json({ success: true, message: "Vault password changed. All sessions invalidated." });
 });
 
-router.get("/admin/vault/reveal/:key", async (req, res): Promise<void> => {
-  if (!requireVaultToken(req, res)) return;
-  const key = req.params["key"];
-  const ALLOWED_KEYS = [
-    "GOOGLE_CLIENT_ID", "GOOGLE_CLIENT_SECRET", "GOOGLE_SA_EMAIL",
-    "GOOGLE_SA_PRIVATE_KEY", "GOOGLE_PROJECT_ID", "GOOGLE_SHEET_ID",
-    "DATABASE_URL", "SESSION_SECRET"
-  ];
-  if (!ALLOWED_KEYS.includes(key)) {
-    res.status(400).json({ error: "Key not allowed" }); return;
-  }
-  const value = process.env[key];
-  if (!value) { res.status(404).json({ error: "Not set" }); return; }
-  // Sanitize DATABASE_URL to hide password
-  if (key === "DATABASE_URL") {
-    res.json({ value: value.replace(/:([^:@]+)@/, ":●●●●●●●●@") }); return;
-  }
-  res.json({ value });
-});
 
 router.post("/admin/vault/test-sheets", async (req, res): Promise<void> => {
   if (!requireVaultToken(req, res)) return;
