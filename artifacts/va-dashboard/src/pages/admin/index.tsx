@@ -6,6 +6,9 @@ import AdminActivity from "./activity";
 import AdminSettings from "./settings";
 import AdminExport from "./export";
 import AdminManual from "./manual";
+import AdminUsers from "./users";
+import AdminNotificationsConfig from "./notifications-config";
+import AdminVault from "./vault";
 import { isAdminAuthenticated } from "./login";
 
 function AdminGuard({ children }: { children: React.ReactNode }) {
@@ -31,6 +34,9 @@ export default function Admin() {
           <Route path="/admin/settings" component={AdminSettings} />
           <Route path="/admin/export" component={AdminExport} />
           <Route path="/admin/manual" component={AdminManual} />
+          <Route path="/admin/users" component={AdminUsers} />
+          <Route path="/admin/notifications" component={AdminNotificationsConfig} />
+          <Route path="/admin/vault" component={AdminVault} />
         </Switch>
       </AdminLayout>
     </AdminGuard>
