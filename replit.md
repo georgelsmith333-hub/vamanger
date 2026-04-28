@@ -84,10 +84,39 @@ pnpm workspace monorepo using TypeScript. A premium eBay VA Client Manager dashb
 - Overdue row highlighting in tables
 - Days overdue indicators on invoices
 
+### Admin Panel (`/admin`) — Extended
+- **Users** — Multi-user management with roles (admin/manager/viewer), activate/deactivate
+- **Notifications** — Bell icon in header, notification rules configuration, mark as read
+- **Secrets Vault** — Encrypted key-value store for sensitive credentials, password protected (default: `Vault@Admin2024`)
+
+## Deployment
+
+### Cloudflare Pages (Frontend) — `va-client-manager.pages.dev`
+- Connected to GitHub repo `georgelsmith333-hub/vamanger`, auto-deploys on push to `main`
+- `VITE_API_BASE_URL=https://va-api.onrender.com` baked in at build time
+- API calls go directly to Render (no proxy needed)
+- Build: `pnpm --filter @workspace/va-dashboard run build`, output: `artifacts/va-dashboard/dist/public`
+
+### Render (Backend) — `https://va-api.onrender.com`
+- Service ID: `srv-d7o08gho3t8c73evuj80`
+- Build: `npm install -g pnpm && pnpm install && pnpm --filter @workspace/api-server run build`
+- Start: `node --enable-source-maps artifacts/api-server/dist/index.mjs`
+- **IMPORTANT**: Service was created via API — must reconnect GitHub repo from Render dashboard Settings
+- PostgreSQL DB: `dpg-d7nuqll7vvec739ecs50-a` (va-postgres)
+- Env vars set: GOOGLE_SA_EMAIL, GOOGLE_SA_PRIVATE_KEY, GOOGLE_CLIENT_SECRET, GOOGLE_CLIENT_ID, GOOGLE_SHEET_ID, SESSION_SECRET, DATABASE_URL, NODE_ENV, GOOGLE_PROJECT_ID, ALLOWED_ORIGINS
+
+## Secrets (Replit)
+- `GITHUB_PERSONAL_ACCESS_TOKEN` — Working GitHub PAT for repo pushes
+- `RENDER_API_KEY` — Render API access
+- `CLOUDFLARE_API_TOKEN` — Cloudflare Workers token (does NOT have Pages permissions)
+- `GOOGLE_*` — Google OAuth + Service Account credentials
+- `SESSION_SECRET` — Express session secret
+
 ## Important Notes
 
 - API server: build with `pnpm --filter @workspace/api-server run build` then restart workflow after route changes
 - DB table name: `recoveryEntriesTable` (NOT `recoveryTable`), `dailyLoginsTable`, `wiseCardsTable`, `bankAccountsTable`
 - `lib/api-zod/src/index.ts` must stay as single line: `export * from "./generated/api";`
 - Admin API uses direct fetch (not codegen) — see `artifacts/va-dashboard/src/lib/admin-api.ts`
-- Cloudflare deployment: `wrangler.toml` at root, `artifacts/va-dashboard/public/_routes.json`
+- Frontend API base URL: `artifacts/va-dashboard/src/lib/api-base.ts` (centralised, reads `VITE_API_BASE_URL`)
+- Cloudflare deployment: `artifacts/va-dashboard/public/_routes.json`, `public/_redirects`
