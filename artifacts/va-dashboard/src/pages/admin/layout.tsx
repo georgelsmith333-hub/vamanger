@@ -2,13 +2,16 @@ import React from "react";
 import { Link, useLocation } from "wouter";
 import {
   LayoutDashboard, Activity, Settings, Download, ArrowLeft,
-  Shield, ChevronRight, LogOut, BookOpen
+  Shield, ChevronRight, LogOut, BookOpen, Users, Bell, KeyRound
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { logoutAdmin } from "./login";
 
 const navItems = [
   { href: "/admin", label: "Overview", icon: LayoutDashboard, exact: true },
+  { href: "/admin/users", label: "User Management", icon: Users },
+  { href: "/admin/notifications", label: "Notifications", icon: Bell },
+  { href: "/admin/vault", label: "Secrets Vault", icon: KeyRound },
   { href: "/admin/activity", label: "Audit Log", icon: Activity },
   { href: "/admin/settings", label: "Settings", icon: Settings },
   { href: "/admin/export", label: "Data Export", icon: Download },
