@@ -1,4 +1,4 @@
-const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
+import { API_BASE as BASE } from "@/lib/api-base";
 const API = `${BASE}/api/admin`;
 
 export async function adminFetch<T>(path: string, options?: RequestInit): Promise<T> {
