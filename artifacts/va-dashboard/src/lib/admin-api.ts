@@ -1,9 +1,15 @@
 import { API_BASE as BASE } from "@/lib/api-base";
+import { getAdminToken } from "@/pages/admin/login";
+
 const API = `${BASE}/api/admin`;
 
 export async function adminFetch<T>(path: string, options?: RequestInit): Promise<T> {
+  const token = getAdminToken();
   const res = await fetch(`${API}${path}`, {
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { "X-Admin-Token": token } : {}),
+    },
     ...options,
   });
   if (!res.ok) {
