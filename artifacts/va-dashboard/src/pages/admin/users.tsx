@@ -9,7 +9,13 @@ import { useToast } from "@/hooks/use-toast";
 import { Plus, Pencil, Trash2, Users, Shield, Eye, UserCheck } from "lucide-react";
 
 import { API_BASE as BASE } from "@/lib/api-base";
-const fetchJson = <T,>(url: string): Promise<T> => fetch(url).then(r => r.json());
+import { getAdminToken } from "@/pages/admin/login";
+
+function authHeaders() {
+  const token = getAdminToken();
+  return token ? { "Content-Type": "application/json", "X-Admin-Token": token } : { "Content-Type": "application/json" };
+}
+const fetchJson = <T,>(url: string): Promise<T> => fetch(url, { headers: authHeaders() }).then(r => r.json());
 
 interface User {
   id: number;
@@ -47,7 +53,7 @@ export default function AdminUsers() {
     mutationFn: async (data: typeof emptyForm) => {
       const url = dialog.user ? `${BASE}/api/users/${dialog.user.id}` : `${BASE}/api/users`;
       const method = dialog.user ? "PUT" : "POST";
-      const res = await fetch(url, { method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) });
+      const res = await fetch(url, { method, headers: authHeaders(), body: JSON.stringify(data) });
       if (!res.ok) throw new Error(await res.text());
       return res.json();
     },
@@ -60,7 +66,7 @@ export default function AdminUsers() {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (id: number) => fetch(`${BASE}/api/users/${id}`, { method: "DELETE" }),
+    mutationFn: (id: number) => fetch(`${BASE}/api/users/${id}`, { method: "DELETE", headers: authHeaders() }),
     onSuccess: () => {
       toast({ title: "User Deleted" });
       queryClient.invalidateQueries({ queryKey: ["admin-users"] });
