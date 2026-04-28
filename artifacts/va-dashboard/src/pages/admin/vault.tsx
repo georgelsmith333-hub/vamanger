@@ -5,9 +5,9 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import {
-  Shield, Lock, Eye, EyeOff, CheckCircle, XCircle, Key, Database,
+  Shield, Lock, CheckCircle, XCircle, Key, Database,
   Globe, Server, RefreshCw, AlertTriangle, ChevronDown, ChevronRight,
-  Layers, TestTube, KeyRound, ShieldCheck, Copy, CopyCheck
+  Layers, TestTube, KeyRound, ShieldCheck
 } from "lucide-react";
 
 import { API_BASE as BASE } from "@/lib/api-base";
@@ -124,7 +124,7 @@ function VaultLogin({ onSuccess }: { onSuccess: () => void }) {
               className="bg-zinc-900 border-zinc-700"
               autoComplete="current-password"
             />
-            <p className="text-xs text-muted-foreground mt-1">Default: <code className="bg-zinc-800 px-1 rounded">Vault@Admin2024</code> — change after first login</p>
+            <p className="text-xs text-muted-foreground mt-1">Enter the vault password set by your administrator</p>
           </div>
           {error && (
             <div className="text-xs text-red-400 bg-red-500/10 border border-red-500/20 rounded p-2 flex items-center gap-2">
@@ -143,9 +143,6 @@ function VaultLogin({ onSuccess }: { onSuccess: () => void }) {
 
 function VaultContent({ onLock }: { onLock: () => void }) {
   const { toast } = useToast();
-  const [showValues, setShowValues] = useState<Record<string, boolean>>({});
-  const [fullValues, setFullValues] = useState<Record<string, string>>({});
-  const [copied, setCopied] = useState<Record<string, boolean>>({});
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({ "Google OAuth": true, "Google Sheets": true, "Google Cloud": true, "Security": true, "Database": true });
   const [showChangePassword, setShowChangePassword] = useState(false);
   const [cpForm, setCpForm] = useState({ current: "", newPass: "", confirm: "" });
@@ -173,40 +170,7 @@ function VaultContent({ onLock }: { onLock: () => void }) {
     },
   });
 
-  const toggleValue = (key: string) => setShowValues(p => ({ ...p, [key]: !p[key] }));
   const toggleGroup = (g: string) => setExpandedGroups(p => ({ ...p, [g]: !p[g] }));
-
-  const revealAndCopy = async (key: string) => {
-    try {
-      let value = fullValues[key];
-      if (!value) {
-        const res = await fetch(`${BASE}/api/admin/vault/reveal/${key}`, { headers: { "x-vault-token": token } });
-        const data = await res.json();
-        if (!res.ok) { toast({ title: "Error", description: data.error, variant: "destructive" }); return; }
-        value = data.value;
-        setFullValues(p => ({ ...p, [key]: value }));
-      }
-      await navigator.clipboard.writeText(value);
-      setCopied(p => ({ ...p, [key]: true }));
-      setTimeout(() => setCopied(p => ({ ...p, [key]: false })), 2500);
-      toast({ title: "Copied to clipboard", description: `${key} copied. It will clear in a moment.` });
-    } catch {
-      toast({ title: "Copy failed", description: "Use the eye icon to reveal, then select manually.", variant: "destructive" });
-    }
-  };
-
-  const revealFull = async (key: string) => {
-    if (fullValues[key]) { setShowValues(p => ({ ...p, [key]: !p[key] })); return; }
-    try {
-      const res = await fetch(`${BASE}/api/admin/vault/reveal/${key}`, { headers: { "x-vault-token": token } });
-      const data = await res.json();
-      if (!res.ok) { toast({ title: "Error", description: data.error, variant: "destructive" }); return; }
-      setFullValues(p => ({ ...p, [key]: data.value }));
-      setShowValues(p => ({ ...p, [key]: true }));
-    } catch {
-      toast({ title: "Failed to reveal", variant: "destructive" });
-    }
-  };
 
   const grouped = data?.credentials.reduce((acc, c) => {
     if (!acc[c.group]) acc[c.group] = [];
@@ -288,27 +252,9 @@ function VaultContent({ onLock }: { onLock: () => void }) {
                         </div>
                         <p className="text-xs text-muted-foreground mt-1">{c.description}</p>
                         <div className="flex items-center gap-1 mt-2">
-                          <code className="text-xs font-mono text-muted-foreground bg-zinc-900 px-2 py-1 rounded flex-1 min-w-0 break-all select-all">
-                            {showValues[c.key]
-                              ? (fullValues[c.key] ?? c.masked)
-                              : "●".repeat(Math.min(c.masked.length, 24))}
+                          <code className="text-xs font-mono text-muted-foreground bg-zinc-900 px-2 py-1 rounded flex-1 min-w-0 break-all">
+                            {c.masked}
                           </code>
-                          <Button
-                            variant="ghost" size="icon" className="h-7 w-7 flex-shrink-0"
-                            title={showValues[c.key] ? "Hide" : "Reveal full value"}
-                            onClick={() => revealFull(c.key)}
-                          >
-                            {showValues[c.key] ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
-                          </Button>
-                          {c.set && (
-                            <Button
-                              variant="ghost" size="icon" className="h-7 w-7 flex-shrink-0"
-                              title="Copy full value to clipboard"
-                              onClick={() => revealAndCopy(c.key)}
-                            >
-                              {copied[c.key] ? <CopyCheck className="w-3 h-3 text-green-400" /> : <Copy className="w-3 h-3" />}
-                            </Button>
-                          )}
                         </div>
                       </div>
                       <Badge variant="outline" className={`text-xs flex-shrink-0 ${c.set ? "bg-green-500/10 text-green-400 border-green-500/30" : "bg-red-500/10 text-red-400 border-red-500/30"}`}>
