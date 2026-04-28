@@ -11,7 +11,12 @@ import { API_BASE } from "@/lib/api-base";
 export const ADMIN_TOKEN_KEY = 'va_admin_token';
 
 export function isAdminAuthenticated(): boolean {
-  return localStorage.getItem(ADMIN_TOKEN_KEY) === 'va-admin-authenticated-ok';
+  const token = localStorage.getItem(ADMIN_TOKEN_KEY);
+  return !!(token && token.length > 16);
+}
+
+export function getAdminToken(): string {
+  return localStorage.getItem(ADMIN_TOKEN_KEY) ?? '';
 }
 
 export function logoutAdmin() {
@@ -36,7 +41,8 @@ export default function AdminLogin() {
         body: JSON.stringify({ password }),
       });
       if (res.ok) {
-        localStorage.setItem(ADMIN_TOKEN_KEY, 'va-admin-authenticated-ok');
+        const data = await res.json() as { token?: string };
+        localStorage.setItem(ADMIN_TOKEN_KEY, data.token ?? 'va-admin-authenticated-ok');
         navigate('/admin');
       } else {
         const data = await res.json() as { error?: string };
