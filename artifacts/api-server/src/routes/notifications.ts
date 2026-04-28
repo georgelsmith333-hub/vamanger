@@ -2,6 +2,7 @@ import { Router } from "express";
 import { db, notificationsTable, notificationRulesTable } from "@workspace/db";
 import { eq, desc, isNull } from "drizzle-orm";
 import { serializeDates } from "../lib/serialize";
+import { requireAdminAuth } from "../lib/admin-auth";
 
 const router = Router();
 
@@ -37,20 +38,20 @@ router.post("/notifications/read-all", async (_req, res): Promise<void> => {
   res.json({ success: true });
 });
 
-router.post("/notifications", async (req, res): Promise<void> => {
+router.post("/notifications", requireAdminAuth, async (req, res): Promise<void> => {
   const { type, title, message, severity = "info", entityType, entityId } = req.body;
   if (!type || !title || !message) { res.status(400).json({ error: "type, title, message required" }); return; }
   const [row] = await db.insert(notificationsTable).values({ type, title, message, severity, entityType, entityId }).returning();
   res.status(201).json(serializeDates(row));
 });
 
-router.delete("/notifications/:id", async (req, res): Promise<void> => {
+router.delete("/notifications/:id", requireAdminAuth, async (req, res): Promise<void> => {
   const id = Number(req.params["id"]);
   await db.delete(notificationsTable).where(eq(notificationsTable.id, id));
   res.status(204).send();
 });
 
-router.get("/notification-rules", async (_req, res): Promise<void> => {
+router.get("/notification-rules", requireAdminAuth, async (_req, res): Promise<void> => {
   let rules = await db.select().from(notificationRulesTable);
   if (rules.length === 0) {
     const inserted = await db.insert(notificationRulesTable).values(DEFAULT_RULES).returning();
@@ -59,7 +60,7 @@ router.get("/notification-rules", async (_req, res): Promise<void> => {
   res.json(rules.map(serializeDates));
 });
 
-router.put("/notification-rules/:id", async (req, res): Promise<void> => {
+router.put("/notification-rules/:id", requireAdminAuth, async (req, res): Promise<void> => {
   const id = Number(req.params["id"]);
   const { enabled, channels, emailRecipients } = req.body;
   const [row] = await db.update(notificationRulesTable).set({ enabled, channels, emailRecipients }).where(eq(notificationRulesTable.id, id)).returning();
