@@ -1,4 +1,4 @@
-import { Switch, Route, Router as WouterRouter, useLocation } from "wouter";
+import { Switch, Route, Router as WouterRouter, useLocation, Redirect } from "wouter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { setBaseUrl } from "@workspace/api-client-react";
 import { API_BASE } from "@/lib/api-base";
@@ -28,6 +28,16 @@ import AdminLogin from "@/pages/admin/login";
 
 setBaseUrl(API_BASE || null);
 
+export const DASHBOARD_ACCESS_KEY = "va_dashboard_access";
+
+export function grantDashboardAccess() {
+  localStorage.setItem(DASHBOARD_ACCESS_KEY, "granted");
+}
+
+export function hasDashboardAccess(): boolean {
+  return localStorage.getItem(DASHBOARD_ACCESS_KEY) === "granted";
+}
+
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -42,6 +52,7 @@ function Router() {
   const [location] = useLocation();
   const isAdmin = location.startsWith("/admin");
   const isDownload = location.startsWith("/download");
+  const hasAccess = hasDashboardAccess();
 
   if (isAdmin) {
     return (
@@ -55,6 +66,10 @@ function Router() {
 
   if (isDownload) {
     return <Download />;
+  }
+
+  if (!hasAccess) {
+    return <Redirect to="/download" />;
   }
 
   return (
