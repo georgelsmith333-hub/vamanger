@@ -6,7 +6,6 @@ import crypto from "crypto";
 const router = Router();
 
 const VAULT_PASSWORD_KEY = "vault_password_hash";
-const DEFAULT_VAULT_PASSWORD = "Vault@Admin2024";
 const VAULT_TOKENS = new Set<string>();
 
 function hashPassword(password: string): string {
@@ -23,10 +22,12 @@ function isSet(value: string | undefined): boolean {
   return !!(value && value.length > 0);
 }
 
-async function getVaultPasswordHash(): Promise<string> {
+async function getVaultPasswordHash(): Promise<string | null> {
   const rows = await db.select().from(settingsTable).where(eq(settingsTable.key, VAULT_PASSWORD_KEY));
   if (rows.length > 0 && rows[0].value) return rows[0].value;
-  const hash = hashPassword(DEFAULT_VAULT_PASSWORD);
+  const seed = process.env["SESSION_SECRET"];
+  if (!seed) return null;
+  const hash = hashPassword(seed.slice(0, 16));
   await db.insert(settingsTable).values({ key: VAULT_PASSWORD_KEY, value: hash, label: "Vault Password Hash", group: "security" }).onConflictDoNothing();
   return hash;
 }
@@ -35,6 +36,10 @@ router.post("/admin/vault/auth", async (req, res): Promise<void> => {
   const { password } = req.body;
   if (!password) { res.status(400).json({ error: "Password required" }); return; }
   const storedHash = await getVaultPasswordHash();
+  if (!storedHash) {
+    res.status(503).json({ error: "Vault not configured. Set SESSION_SECRET environment variable on the server." });
+    return;
+  }
   const inputHash = hashPassword(password);
   if (inputHash !== storedHash) {
     res.status(401).json({ error: "Incorrect vault password" });
