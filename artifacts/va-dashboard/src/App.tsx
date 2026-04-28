@@ -1,5 +1,7 @@
 import { Switch, Route, Router as WouterRouter, useLocation } from "wouter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { setBaseUrl } from "@workspace/api-client-react";
+import { API_BASE } from "@/lib/api-base";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Layout } from "@/components/layout";
@@ -23,6 +25,8 @@ import SheetsSync from "@/pages/sheets-sync";
 import Download from "@/pages/download";
 import Admin from "@/pages/admin/index";
 import AdminLogin from "@/pages/admin/login";
+
+setBaseUrl(API_BASE || null);
 
 const queryClient = new QueryClient({
   defaultOptions: {
