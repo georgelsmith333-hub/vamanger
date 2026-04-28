@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Shield, Eye, EyeOff, AlertCircle } from 'lucide-react';
 
-const API_BASE = import.meta.env.BASE_URL?.replace(/\/$/, '') ?? '';
+import { API_BASE } from "@/lib/api-base";
 
 export const ADMIN_TOKEN_KEY = 'va_admin_token';
 
