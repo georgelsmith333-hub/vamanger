@@ -8,7 +8,13 @@ import { useToast } from "@/hooks/use-toast";
 import { Bell, Mail, Monitor, MailCheck, AlertTriangle, FileText, CheckSquare, Info, CreditCard, Users, TrendingDown } from "lucide-react";
 
 import { API_BASE as BASE } from "@/lib/api-base";
-const fetchJson = <T,>(url: string): Promise<T> => fetch(url).then(r => r.json());
+import { getAdminToken } from "@/pages/admin/login";
+
+function authHeaders() {
+  const token = getAdminToken();
+  return token ? { "Content-Type": "application/json", "X-Admin-Token": token } : { "Content-Type": "application/json" };
+}
+const fetchJson = <T,>(url: string): Promise<T> => fetch(url, { headers: authHeaders() }).then(r => r.json());
 
 interface NotificationRule {
   id: number;
@@ -49,7 +55,7 @@ export default function AdminNotificationsConfig() {
   const updateMutation = useMutation({
     mutationFn: ({ id, ...data }: { id: number } & Partial<NotificationRule>) =>
       fetch(`${BASE}/api/notification-rules/${id}`, {
-        method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data),
+        method: "PUT", headers: authHeaders(), body: JSON.stringify(data),
       }).then(r => r.json()),
     onSuccess: () => {
       toast({ title: "Notification rule saved" });
