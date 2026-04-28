@@ -10,7 +10,7 @@ import {
   ResponsiveContainer, Legend,
 } from 'recharts';
 
-const BASE = import.meta.env.BASE_URL.replace(/\/$/, '');
+import { API_BASE as BASE } from "@/lib/api-base";
 
 function KpiCard({ title, value, subtitle, icon: Icon, alert, href }: {
   title: string;
